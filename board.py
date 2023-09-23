@@ -1,7 +1,6 @@
 import pygame
 
 
-<<<<<<< HEAD
 # State of tile pieces in board
 UNOCUPIED = 0
 PLAYER_1_TOKEN = 1
@@ -38,21 +37,5 @@ class Board(object):
     def get_unocupied_tiles(self) -> list[tuple[int]]:
         return [(i, j) for j in range(self.board_size) for i in range(self.board_size) if self.board[i][j] == UNOCUPIED]
     
-=======
-class Token(object):
-    pass
-
-
-class Hex_board(object):
-
-    board_size: int
-    board: list[list[Token]]
-    click_board: tuple[tuple[pygame.Rect]]
-
-    def __init__(self):
-        pass
-
-    pass
->>>>>>> ae7030dff4adc72573dec5a5a6d7c50d9ae02e0e
 
 

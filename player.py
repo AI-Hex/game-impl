@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import pygame, sys, random
 from board import *
 
@@ -62,22 +61,3 @@ class AI_random_player(AI_player):
         """
         possible_moves = board.get_unocupied_tiles()
         return possible_moves[random.randint(0, len(possible_moves)-1)]
-=======
-import pygame
-
-
-class Player(object):
-    
-    def __init__(self):
-        pass
-    
-    pass
-
-
-class Human_player(Player):
-    pass
-
-
-class AI_player(Player):
-    pass
->>>>>>> ae7030dff4adc72573dec5a5a6d7c50d9ae02e0e
