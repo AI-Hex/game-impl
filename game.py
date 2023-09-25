@@ -22,63 +22,140 @@ class Game(object):
         self.player_1 = player_1
         self.player_2 = player_2
         self.players = [player_1, player_2]
+        self.player_turn = 0
 
     def start(self):
         """
         Start a round of Hex
         """
         self.game_graphics.draw_grid()
-        pygame.display.update()
-
-        player_turn = 0
 
         # Game loop
         while True:
 
-            if self.players[player_turn].is_ai() == True:
-                tile_pos = self.players[player_turn].get_move(self.game_board)
-                if tile_pos != None and self.game_board.occupies(tile_pos) == False:
-                    self.game_board.make_move(tile_pos, self.players[player_turn].token)
-                    self.game_graphics.draw_move(tile_pos, self.players[player_turn].token)
+            if self.players[self.player_turn].is_ai() == True:
+                self.__handle_ai_move()
             else:
-                # Player loop
-                while True:
-                    self.__check_for_quit()
-                    tile_pos = self.__check_for_move()
-                    if tile_pos != None and self.game_board.occupies(tile_pos) == False:
-                        self.game_board.make_move(tile_pos, self.players[player_turn].token)
-                        self.game_graphics.draw_move(tile_pos, self.players[player_turn].token)
-                        break
+                self.__handle_human_move()
 
-            pygame.display.update()
             # Advance turn to the next player
-            player_turn = 1 - player_turn
+            self.player_turn = 1 - self.player_turn
         
-    def __check_for_quit(self):
+    def __check_for_quit(self, event: pygame.event.Event) -> bool:
         """
-        Exit the program if user requests to quit
+        Check if user wants to quit
         """
-        for event in pygame.event.get(QUIT):
-            self.__terminate()
-        for event in pygame.event.get(KEYUP):
-            if event.key == K_ESCAPE:
-                self.__terminate()
+        if event.type == QUIT: 
+            return True
+        if event.type == KEYUP:
+            if event.key == K_ESCAPE: 
+                return True
+        return False
     
-    def __check_for_move(self) -> tuple[int] | None:
+    def __check_for_move(self, event: pygame.event.Event) -> bool:
         """
-        Check if the player made a move (clicked a tile)
+        Check if the player made a valid move (clicked a tile)
 
-        Return the coordinates of the tile that the player clicked (if possible)
+        Return the row and column of the tile that the player clicked (if possible)
         """
-        for event in pygame.event.get(MOUSEBUTTONUP):
+        if event.type == MOUSEBUTTONUP:
             click_x, click_y = event.pos
             for i in range(self.game_board.board_size):
                 for j in range(self.game_board.board_size):
                     if self.game_graphics.click_board[i][j].collidepoint(click_x, click_y):
-                        return (i, j)
+                        if self.game_board.occupies((i, j)) == False:
+                            return True
+                        return None
         return None
 
+    def __check_for_win(self, player_turn: int):
+        if self.game_board.check_victory() == True:
+            self.game_graphics.animate_win_path(self.game_board.get_win_path(), player_turn + 1)
+            pygame.time.wait(1000)
+            self.__terminate()
+
+    def __check_for_reset(self, event: pygame.event.Event) -> bool:
+        if event.type == KEYUP:
+            if event.key == K_SPACE:
+                return True
+        return False
+    
+    def __translate_pos_to_move(self, click_pos: tuple[float]) -> tuple[int]:
+        click_x, click_y = click_pos
+        for i in range(self.game_board.board_size):
+            for j in range(self.game_board.board_size):
+                if self.game_graphics.click_board[i][j].collidepoint(click_x, click_y):
+                    return (i, j)
+        return None
+
+    def __reset_game(self):
+        self.game_graphics.draw_grid()
+        self.game_board.clear()
+        self.player_turn = 1 # end the turn on the second player 
+
+    def __handle_ai_move(self):
+        tile_pos = self.players[self.player_turn].get_move(self.game_board)
+        if tile_pos != None and self.game_board.occupies(tile_pos) == False:
+            self.game_board.make_move(tile_pos, self.players[self.player_turn].token)
+            self.game_graphics.draw_move(tile_pos, self.players[self.player_turn].token)
+        self.__check_for_win(self.player_turn)
+
+    def __handle_human_move(self):
+        # Player loop
+        while True:
+            for event in pygame.event.get():
+                if self.__check_for_quit(event) == True:
+                    self.__terminate()
+                if self.__check_for_reset(event) == True:
+                    self.__reset_game()
+                    return
+                if self.__check_for_move(event) == True:
+                    self.__handle_move(self.__translate_pos_to_move(event.pos))
+                    return
+                if self.__check_for_pause(event) == True:
+                    self.__pause_game()
+
+    def __handle_move(self, tile_pos: tuple[int]):
+        self.game_board.make_move(tile_pos, self.players[self.player_turn].token)
+        self.game_graphics.draw_move(tile_pos, self.players[self.player_turn].token)
+        self.__check_for_win(self.player_turn)
+
+    def __check_for_pause(self, event: pygame.event.Event) -> bool:
+        if event.type == KEYUP:
+            if event.key == K_TAB:
+                return True
+        return False
+    
+    def __pause_game(self):
+        self.game_graphics.draw_paused_game()
+        while True:
+            # handle pause
+            pygame.time.wait(2000)
+            break
+        # exit pause
+        self.game_graphics.draw_board(self.game_board.board)
 
     def __terminate(self):
         pygame.quit()
         sys.exit()
+
+
+
+
+
+    """ GARBAGE CODE """
+    # checking if neighboring cells work
+    def __handle_human_move_test(self, player_turn: int):
+        # Player loop
+        while True:
+            self.__check_for_quit()
+            tile_pos = self.__check_for_move()
+            if tile_pos != None and self.game_board.occupies(tile_pos) == False:
+                self.game_board.make_move(tile_pos, self.players[player_turn].token)
+                self.game_graphics.draw_move(tile_pos, self.players[player_turn].token)
+                all_neighbors = self.game_board.get_neighboring_tiles_by_token(tile_pos, UNOCUPIED)
+                for neighbor in all_neighbors:
+                    self.game_board.make_move(neighbor, self.players[player_turn].token)
+                    self.game_graphics.draw_move(neighbor, self.players[player_turn].token)
+                break
+        self.__check_for_win(player_turn)
