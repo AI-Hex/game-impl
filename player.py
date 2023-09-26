@@ -19,8 +19,11 @@ class Player(object):
     def is_ai(self) -> bool:
         pass
 
+    def get_move(self, game_board):
+        pass
 
-class Human_player(Player):
+
+class Human_Player(Player):
 
     def __init__(self, token: int):
         super().__init__(token)
@@ -32,7 +35,7 @@ class Human_player(Player):
         return not self.is_human()
 
 
-class AI_player(Player):
+class AI_Player(Player):
 
     def __init__(self, token: int):
         super().__init__(token)
@@ -50,14 +53,14 @@ class AI_player(Player):
         pass
 
 
-class AI_random_player(AI_player):
+class AI_Random_Player(AI_Player):
     
     def __init__(self, token: int):
         super().__init__(token)
     
-    def get_move(self, board: Board) -> bool:
+    def get_move(self, board: Board) -> tuple[int, int]:
         """
         Get a random unocupied tile
         """
-        possible_moves = board.get_unocupied_tiles()
+        possible_moves = board.get_unoccupied_tiles()
         return possible_moves[random.randint(0, len(possible_moves)-1)]
