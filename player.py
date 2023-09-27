@@ -19,7 +19,7 @@ class Player(object):
     def is_ai(self) -> bool:
         pass
 
-    def get_move(self, game_board):
+    def get_move(self, game_board: Board):
         pass
 
 

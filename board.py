@@ -23,6 +23,13 @@ class Board(object):
         Reset the board
         """
         self.board = [[UNOCCUPIED for _ in range(self.board_size)] for _ in range(self.board_size)]
+    
+    def is_empty(self):
+        for i in range(self.board_size):
+            for j in range(self.board_size):
+                if self.board[i][j] != UNOCCUPIED:
+                    return False
+        return True
 
     def make_move(self, tile_pos: tuple[int, int], player_token: int):
         """
@@ -39,8 +46,7 @@ class Board(object):
         return self.board[row][column] != UNOCCUPIED
 
     def get_unoccupied_tiles(self) -> list[tuple[int, int]]:
-        return [(i, j) for j in range(self.board_size) for i in range(self.board_size) if
-                self.board[i][j] == UNOCCUPIED]
+        return [(i, j) for j in range(self.board_size) for i in range(self.board_size) if self.board[i][j] == UNOCCUPIED]
 
     def get_neighboring_tiles(self, tile_pos: tuple[int, int]) -> list[tuple[int, int]]:
         """

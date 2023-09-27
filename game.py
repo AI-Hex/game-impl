@@ -34,6 +34,7 @@ class Game(object):
         while True:
 
             if self.players[self.player_turn].is_ai() is True:
+                pygame.event.pump()  # tricks computer to think that events are beings processed
                 self.__handle_ai_move()
             else:
                 self.__handle_human_move()
@@ -71,10 +72,24 @@ class Game(object):
     def __check_for_win(self, player_turn: int):
         if self.game_board.check_victory() is True:
             self.game_graphics.animate_win_path(self.game_board.get_win_path(), player_turn + 1)
-            pygame.time.wait(1000)
-            self.__terminate()
+            while True:
+                for event in pygame.event.get():
+                    if self.__check_for_quit(event) is True:
+                        self.__terminate()
+                    if self.__check_for_reset(event) is True:
+                        self.__reset_game()
+                        return
+                    if self.__check_for_pause(event) is True:
+                        self.__pause_game()
+                if self.game_board.is_empty() is True:
+                    return
 
     def __check_for_reset(self, event: pygame.event.Event) -> bool:
+        self.game_graphics.animate_reset_text()
+        if event.type == MOUSEBUTTONUP:
+            click_x, click_y = event.pos
+            if self.game_graphics.reset_text_box.collidepoint(click_x, click_y) is True:
+                return True
         if event.type == KEYUP:
             if event.key == K_SPACE:
                 return True
@@ -106,24 +121,62 @@ class Game(object):
         self.__check_for_win(self.player_turn)
 
     def __check_for_pause(self, event: pygame.event.Event) -> bool:
+        self.game_graphics.animate_settings_text()
+        if event.type == MOUSEBUTTONUP:
+            click_x, click_y = event.pos
+            if self.game_graphics.settings_text_box.collidepoint(click_x, click_y):
+                return True
         if event.type == KEYUP:
             if event.key == K_TAB:
                 return True
         return False
     
     def __pause_game(self):
-        self.game_graphics.draw_paused_game()
-        while True:
-            # handle pause
-            pygame.time.wait(2000)
-            break
-        # exit pause
+        self.__handle_paused_game()
         self.game_graphics.draw_board(self.game_board.board)
+
+    def __handle_paused_game(self):
+        player_1_human_flag = self.player_1.is_human()
+        player_2_human_flag = self.player_2.is_human()
+        self.game_graphics.draw_paused_game(player_1_human_flag, player_2_human_flag)
+
+        while True: 
+            for event in pygame.event.get():
+                if self.__check_for_quit(event) is True:
+                    self.__terminate()
+                if event.type == MOUSEBUTTONUP:
+                    click_x, click_y = event.pos
+                    if self.game_graphics.player_1_human_box.collidepoint(click_x, click_y) is True:
+                        player_1_human_flag = True
+                    if self.game_graphics.player_1_ai_box.collidepoint(click_x, click_y) is True:
+                        player_1_human_flag = False
+                    if self.game_graphics.player_2_human_box.collidepoint(click_x, click_y) is True:
+                        player_2_human_flag = True
+                    if self.game_graphics.player_2_ai_box.collidepoint(click_x, click_y) is True:
+                        player_2_human_flag = False
+                    if self.game_graphics.go_back_box.collidepoint(click_x, click_y) is True:
+                        return
+                    if self.game_graphics.save_changes_box.collidepoint(click_x, click_y) is True:
+                        self.__change_players(player_1_human_flag, player_2_human_flag)
+                        self.__reset_game()
+                        return
+                    self.game_graphics.draw_paused_game(player_1_human_flag, player_2_human_flag)
+
+    def __change_players(self, player_1_human_flag: bool, player_2_human_flag: bool):
+        if player_1_human_flag is True:
+            self.player_1 = Human_Player(1)
+        else:
+            self.player_1 = AI_Random_Player(1)
+        if player_2_human_flag is True:
+            self.player_2 = Human_Player(2)
+        else:
+            self.player_2 = AI_Random_Player(2)            
+        self.players[0] = self.player_1
+        self.players[1] = self.player_2
 
     def __terminate(self):
         pygame.quit()
         sys.exit()
-
 
     def __handle_human_move(self):
         # Player loop
@@ -139,6 +192,7 @@ class Game(object):
                     return
                 if self.__check_for_pause(event) is True:
                     self.__pause_game()
+                    return
 
     # """ GARBAGE CODE """
     # # checking if neighboring cells work
