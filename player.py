@@ -64,3 +64,10 @@ class AI_Random_Player(AI_Player):
         """
         possible_moves = board.get_unoccupied_tiles()
         return possible_moves[random.randint(0, len(possible_moves)-1)]
+
+class AI_Minmax_Player(AI_Player):
+    def __init__(self, token: int):
+        super().__init__(token)
+
+    def get_move(self, board: Board) -> tuple[int, int]:
+        pass

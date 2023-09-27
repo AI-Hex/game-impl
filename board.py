@@ -1,4 +1,5 @@
 import pygame
+from graph import *
 
 # State of tile pieces in board
 UNOCCUPIED = 0
@@ -10,13 +11,66 @@ class Board(object):
     board: list[list[int]]
     """Keeps track of the tokens (or lack of tokens) on the board"""
     board_size: int
+    graph: HexGraph
+    hex_nodes_by_position: dict[tuple[int, int], HexNode]
 
     def __init__(self, board_size: int):
         """
         Initialize an empty hex board
         """
-        self.board = [[UNOCCUPIED for _ in range(board_size)] for _ in range(board_size)]
+        # self.board = [[UNOCCUPIED for _ in range(board_size)] for _ in range(board_size)]
+        created_nodes: list[HexNode]
+        created_nodes = list()
+        edges_matrix: list[list[int]]
+        self.board = list()
+        self.hex_nodes_by_position = dict()
+        value_counter = 0
+        for i in range(board_size):
+            self.board.append(list())
+            for j in range(board_size):
+                self.board[i].append(UNOCCUPIED)
+                new_node = HexNode(position=(i, j), node_value=value_counter)
+                created_nodes.append(new_node)
+                self.hex_nodes_by_position[(i, j)] = new_node
+                value_counter += 1
+        num_nodes = board_size * board_size
+        edges_matrix = [[float("inf") for _ in range(num_nodes)] for _ in range(num_nodes)]
         self.board_size = board_size
+        self.graph = HexGraph(board_size=board_size, hex_nodes=created_nodes, edges_matrix=edges_matrix)
+        self.update_initial_edges()
+
+    def __copy__(self):
+        new_board: Board
+        new_board = Board(self.board_size)
+        new_hex_nodes_by_position = copy.deepcopy(self.hex_nodes_by_position)
+        new_graph = self.graph.copy()
+        new_board.hex_nodes_by_position = new_hex_nodes_by_position
+        new_board.graph = new_graph
+        return new_board
+
+    def update_initial_edges(self):
+        nodes_list = self.graph.hex_nodes
+        num_nodes = self.board_size * self.board_size
+        counter = 0
+        for node in nodes_list:
+            node_value = node.node_value
+            if 0 <= node_value - self.board_size <= num_nodes - 1:
+                self.graph.update_edge_value(node_value, node_value - self.board_size, 1)
+            if 0 <= node_value + self.board_size <= num_nodes - 1:
+                self.graph.update_edge_value(node_value, node_value + self.board_size, 1)
+            if node_value % self.board_size != self.board_size - 1:
+                if 0 <= node_value - self.board_size + 1 <= num_nodes - 1:
+                    self.graph.update_edge_value(node_value, node_value - self.board_size + 1, 1)
+                if 0 <= node_value + 1 <= num_nodes - 1:
+                    self.graph.update_edge_value(node_value, node_value + 1, 1)
+            if node_value % self.board_size != 0:
+                if 0 <= node_value + self.board_size - 1 <= num_nodes - 1:
+                    self.graph.update_edge_value(node_value, node_value + self.board_size - 1, 1)
+                if 0 <= node_value - 1 <= num_nodes - 1:
+                    self.graph.update_edge_value(node_value, node_value - 1, 1)
+            #print(node.node_value)
+            #print(self.graph.edges_matrix[counter])
+            #counter += 1
 
     def clear_board(self):
         """
@@ -24,12 +78,26 @@ class Board(object):
         """
         self.board = [[UNOCCUPIED for _ in range(self.board_size)] for _ in range(self.board_size)]
 
+
     def make_move(self, tile_pos: tuple[int, int], player_token: int):
         """
         Place a player token on an unoccupied tile
         """
         row, column = tile_pos
         self.board[row][column] = player_token
+        node = self.hex_nodes_by_position[tile_pos]
+        node.status = player_token
+        neighbour_positions = self.get_neighboring_tiles(tile_pos)
+        list_of_neighbour_nodes = list()
+        for position in neighbour_positions:
+            list_of_neighbour_nodes.append(self.hex_nodes_by_position[position])
+        for neighbour_node in list_of_neighbour_nodes:
+            if node.status == neighbour_node.status:
+                self.graph.update_edge_value(node.node_value, neighbour_node.node_value, 0)
+            elif neighbour_node.status != UNOCCUPIED:
+                self.graph.update_edge_value(node.node_value, neighbour_node.node_value, float("inf"))
+        print(node.node_value, self.graph.edges_matrix[node.node_value])
+
 
     def is_tile_occupied(self, tile_pos: tuple[int, int]) -> bool:
         """
@@ -62,6 +130,25 @@ class Board(object):
         if row + 1 < self.board_size:
             result.append((row + 1, column))
         return result
+
+    def find_all_neighbour_nodes(self, current_node: HexNode, player_token) -> list[HexNode]:
+        positions_list = self.get_neighboring_tiles(current_node.position)
+        resulting_list: list[HexNode]
+        resulting_list = list()
+        for position in positions_list:
+            node = self.hex_nodes_by_position[position]
+            if node.status == player_token or node.status == UNOCCUPIED:
+                resulting_list.append(node)
+        return resulting_list
+
+    def get_available_nodes(self):
+        list_available_nodes: list[HexNode]
+        for i in range(self.board_size):
+            for j in range(self.board_size):
+                self.board[i][j] == UNOCCUPIED
+                node = self.hex_nodes_by_position[(i, j)]
+                list_available_nodes.append(node)
+        return list_available_nodes
 
     def get_neighboring_tiles_by_token(self, tile_pos: tuple[int, int], by_token: int | None = None) -> list[tuple[int, int]]:
         """

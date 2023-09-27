@@ -40,7 +40,7 @@ class Game(object):
 
             # Advance turn to the next player
             self.player_turn = 1 - self.player_turn
-        
+
     def __check_for_quit(self, event: pygame.event.Event) -> bool:
         """
         Check if user wants to quit
