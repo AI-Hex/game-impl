@@ -131,6 +131,15 @@ class Graphics(object):
         self.player_2_ai_box = pygame.Rect(590, 310, 45, 43)
         self.go_back_box = pygame.Rect(42, 530, 153, 45) 
         self.save_changes_box = pygame.Rect(494, 530, 257, 53)
+        self.player_1_turn_text = pygame.image.load('Sprites\\player_1_turn_text.png')
+        self.player_1_turn_text.fill(PLAYER_1_COLOR, special_flags=BLEND_RGB_ADD)
+        self.player_2_turn_text = pygame.image.load('Sprites\\player_2_turn_text.png')
+        self.player_2_turn_text.fill(PLAYER_2_COLOR, special_flags=BLEND_RGB_ADD)
+        self.player_1_wins_text = pygame.image.load('Sprites\\player_1_wins_text.png')
+        self.player_1_wins_text.fill(PLAYER_1_COLOR, special_flags=BLEND_RGB_ADD)
+        self.player_2_wins_text = pygame.image.load('Sprites\\player_2_wins_text.png')
+        self.player_2_wins_text.fill(PLAYER_2_COLOR, special_flags=BLEND_RGB_ADD)
+        self.player_turn_box = pygame.Rect(0, 680, self.player_1_turn_text.get_width(), self.player_1_turn_text.get_height())
 
         self.display_surface = pygame.display.set_mode((self.window_width, self.window_height), depth=32)
         pygame.display.set_caption('Hex')
@@ -150,6 +159,7 @@ class Graphics(object):
         # Draw text
         self.display_surface.blit(self.reset_text, (0, 0))
         self.display_surface.blit(self.settings_text, (self.window_width - self.settings_text.get_width(), 0))
+        self.display_surface.blit(self.player_1_turn_text, (0, 535))
 
         # Draw hex tiles not on border
         for i in range(self.board_size):
@@ -183,9 +193,22 @@ class Graphics(object):
             self.display_surface.blit(self.token_image_player_2, self.click_board[row][column])
         self.fps_clock.tick(self.fps)
         pygame.display.update()
+    
+    def draw_turn(self, player_turn: int):
+        pygame.draw.rect(self.display_surface, WHITE, (0, 535, self.player_1_turn_text.get_width(), self.player_1_turn_text.get_height()))
+        if player_turn == 0:
+            self.display_surface.blit(self.player_1_turn_text, (0, 535))
+        else:
+            self.display_surface.blit(self.player_2_turn_text, (0, 535))
+        pygame.display.update()
 
     def animate_win_path(self, path: list[tuple[int, int]], player_token: int):
         winner_token_image = self.token_image_player_1 if player_token == PLAYER_1_TOKEN else self.token_image_player_2
+        pygame.draw.rect(self.display_surface, WHITE, (0, 535, self.player_1_turn_text.get_width(), self.player_1_turn_text.get_height()))
+        if player_token == PLAYER_1_TOKEN:
+            self.display_surface.blit(self.player_1_wins_text, (0, 535))
+        else:
+            self.display_surface.blit(self.player_2_wins_text, (0, 535))
         for _ in range(4):  # blink 4 times
             for (row, column) in path:
                 self.display_surface.blit(self.token_image, self.click_board[row][column])

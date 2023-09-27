@@ -83,6 +83,7 @@ class Game(object):
                         self.__pause_game()
                 if self.game_board.is_empty() is True:
                     return
+        self.game_graphics.draw_turn(1 - player_turn)
 
     def __check_for_reset(self, event: pygame.event.Event) -> bool:
         self.game_graphics.animate_reset_text()
