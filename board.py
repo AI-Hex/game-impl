@@ -8,9 +8,7 @@ PLAYER_2_TOKEN = 2
 
 class Board(object):
     board: list[list[int]]
-    """
-    Keeps track of the tokens (or lack of tokens) on the board
-    """
+    """Keeps track of the tokens (or lack of tokens) on the board"""
     board_size: int
 
     def __init__(self, board_size: int):
