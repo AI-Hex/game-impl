@@ -3,7 +3,7 @@ from board import PLAYER_1_TOKEN, PLAYER_2_TOKEN
 from pygame.locals import *
 
 
-# Colors(R, G, B)
+# Colors (R, G, B)
 BLACK = (0, 0, 0)
 WHITE = (255, 255, 255)
 BOARD_COLOR = (0, 0, 0)
@@ -66,17 +66,41 @@ class Graphics(object):
         self.token_image_player_2 = self.token_image.copy()
         self.token_image_player_2.fill(PLAYER_2_COLOR, special_flags=BLEND_RGB_MULT)
         self.left_border = pygame.image.load('Sprites\\left_border.png')
-        self.left_border = pygame.transform.smoothscale(self.left_border, (self.tile_width, self.tile_width * self.left_border.get_height() / self.left_border.get_width()))
-        self.left_border.fill(PLAYER_1_COLOR, special_flags=BLEND_RGB_ADD)
+        self.left_border = pygame.transform.smoothscale(self.left_border, (2.5 * self.tile_width, 2.5 * self.tile_width * self.left_border.get_height() / self.left_border.get_width()))
+        self.left_border.fill(PLAYER_1_COLOR, special_flags=BLEND_RGB_MULT)
         self.right_border = pygame.image.load('Sprites\\right_border.png')
-        self.right_border = pygame.transform.smoothscale(self.right_border, (self.tile_width, self.tile_width * self.right_border.get_height() / self.right_border.get_width()))
-        self.right_border.fill(PLAYER_1_COLOR, special_flags=BLEND_RGB_ADD)
+        self.right_border = pygame.transform.smoothscale(self.right_border, (2.5 * self.tile_width, 2.5 * self.tile_width * self.right_border.get_height() / self.right_border.get_width()))
+        self.right_border.fill(PLAYER_1_COLOR, special_flags=BLEND_RGB_MULT)
         self.top_border = pygame.image.load('Sprites\\top_border.png')
         self.top_border = pygame.transform.smoothscale(self.top_border, (self.tile_width, self.tile_width * self.top_border.get_height() / self.top_border.get_width()))
-        self.top_border.fill(PLAYER_2_COLOR, special_flags=BLEND_RGB_ADD)
+        self.top_border.fill(PLAYER_2_COLOR, special_flags=BLEND_RGB_MULT)
         self.bottom_border = pygame.image.load('Sprites\\bottom_border.png')
         self.bottom_border = pygame.transform.smoothscale(self.bottom_border, (self.tile_width, self.tile_width * self.bottom_border.get_height() / self.bottom_border.get_width()))
-        self.bottom_border.fill(PLAYER_2_COLOR, special_flags=BLEND_RGB_ADD)
+        self.bottom_border.fill(PLAYER_2_COLOR, special_flags=BLEND_RGB_MULT)
+        self.bottom_right_border = pygame.image.load('Sprites\\bottom_right_border.png')
+        self.bottom_right_border = pygame.transform.smoothscale(self.bottom_right_border, (2.5 * self.tile_width, 2.5 * self.tile_width * self.bottom_right_border.get_height() / self.bottom_right_border.get_width()))
+        self.bottom_right_border.fill(PLAYER_1_COLOR, special_flags=BLEND_RGB_MULT)
+        self.bottom_right_border_2 = pygame.image.load('Sprites\\bottom_right_border_2.png')
+        self.bottom_right_border_2 = pygame.transform.smoothscale(self.bottom_right_border_2, (2.5 * self.tile_width, 2.5 * self.tile_width * self.bottom_right_border_2.get_height() / self.bottom_right_border_2.get_width()))
+        self.bottom_right_border_2.fill(PLAYER_2_COLOR, special_flags=BLEND_RGB_MULT)
+        self.top_left_border = pygame.image.load('Sprites\\top_left_border.png')
+        self.top_left_border = pygame.transform.smoothscale(self.top_left_border, (2.5 * self.tile_width, 2.5 * self.tile_width * self.top_left_border.get_height() / self.top_left_border.get_width()))
+        self.top_left_border.fill(PLAYER_1_COLOR, special_flags=BLEND_RGB_MULT)
+        self.top_left_border_2 = pygame.image.load('Sprites\\top_left_border_2.png')
+        self.top_left_border_2 = pygame.transform.smoothscale(self.top_left_border_2, (2.5 * self.tile_width, 2.5 * self.tile_width * self.top_left_border_2.get_height() / self.top_left_border_2.get_width()))
+        self.top_left_border_2.fill(PLAYER_2_COLOR, special_flags=BLEND_RGB_MULT)
+        self.bottom_left_border = pygame.image.load('Sprites\\bottom_left_border.png')
+        self.bottom_left_border = pygame.transform.smoothscale(self.bottom_left_border, (2.5 * self.tile_width, 2.5 * self.tile_width * self.bottom_left_border.get_height() / self.bottom_left_border.get_width()))
+        self.bottom_left_border.fill(PLAYER_1_COLOR, special_flags=BLEND_RGB_MULT)
+        self.bottom_left_border_2 = pygame.image.load('Sprites\\bottom_left_border_2.png')
+        self.bottom_left_border_2 = pygame.transform.smoothscale(self.bottom_left_border_2, (2.5 * self.tile_width, 2.5 * self.tile_width * self.bottom_left_border_2.get_height() / self.bottom_left_border_2.get_width()))
+        self.bottom_left_border_2.fill(PLAYER_2_COLOR, special_flags=BLEND_RGB_MULT)
+        self.top_right_border = pygame.image.load('Sprites\\top_right_border.png')
+        self.top_right_border = pygame.transform.smoothscale(self.top_right_border, (2.5 * self.tile_width, 2.5 * self.tile_width * self.top_right_border.get_height() / self.top_right_border.get_width()))
+        self.top_right_border.fill(PLAYER_1_COLOR, special_flags=BLEND_RGB_MULT)
+        self.top_right_border_2 = pygame.image.load('Sprites\\top_right_border_2.png')
+        self.top_right_border_2 = pygame.transform.smoothscale(self.top_right_border_2, (2.5 * self.tile_width, 2.5 * self.tile_width * self.top_right_border_2.get_height() / self.top_right_border_2.get_width()))
+        self.top_right_border_2.fill(PLAYER_2_COLOR, special_flags=BLEND_RGB_MULT)
 
         self.display_surface = pygame.display.set_mode((self.window_width, self.window_height), depth=32)
         pygame.display.set_caption('Hex')
@@ -91,14 +115,29 @@ class Graphics(object):
         Draw an empty grid
         """
         self.display_surface.fill(WHITE)
-        # Draw hex tiles
+
+        # Draw hex tiles not on border
         for i in range(self.board_size):
-            self.display_surface.blit(self.left_border, self.click_board[i][0].copy().move(-0.6 * self.tile_width, 0.3 * self.tile_width))
-            self.display_surface.blit(self.right_border, self.click_board[i][self.board_size - 1].copy().move(0.6 * self.tile_width, -0.3 * self.tile_width))
-            self.display_surface.blit(self.top_border, self.click_board[0][i].copy().move(-0.2 * self.tile_width, -0.65 * self.tile_width))
-            self.display_surface.blit(self.bottom_border, self.click_board[self.board_size - 1][i].copy().move(0.2 * self.tile_width, 0.65 * self.tile_width))
             for j in range(self.board_size):
                 self.display_surface.blit(self.hex_image, self.click_board[i][j])
+        
+        # Draw hex tiles on border but not on corner
+        for i in range(1, self.board_size-1):
+            self.display_surface.blit(self.left_border, self.click_board[i][0].copy().move(-1.5 * self.tile_width, 0))
+            self.display_surface.blit(self.right_border, self.click_board[i][self.board_size - 1])
+            self.display_surface.blit(self.top_border, self.click_board[0][i].copy().move(0, -0.75 * self.tile_width))
+            self.display_surface.blit(self.bottom_border, self.click_board[self.board_size - 1][i])
+        
+        # Draw corners
+        self.display_surface.blit(self.bottom_right_border, self.click_board[self.board_size - 1][self.board_size - 1])
+        self.display_surface.blit(self.bottom_right_border_2, self.click_board[self.board_size - 1][self.board_size - 1])
+        self.display_surface.blit(self.top_left_border, self.click_board[0][0].copy().move(-1.5 * self.tile_width, -0.75 * self.tile_width))
+        self.display_surface.blit(self.top_left_border_2, self.click_board[0][0].copy().move(-1.5 * self.tile_width, -0.75 * self.tile_width))
+        self.display_surface.blit(self.bottom_left_border, self.click_board[self.board_size - 1][0].copy().move(-1.5 * self.tile_width, 0))
+        self.display_surface.blit(self.bottom_left_border_2, self.click_board[self.board_size - 1][0].copy().move(-1.5 * self.tile_width, 0))
+        self.display_surface.blit(self.top_right_border, self.click_board[0][self.board_size - 1].copy().move(0, -0.75 * self.tile_width))
+        self.display_surface.blit(self.top_right_border_2, self.click_board[0][self.board_size - 1].copy().move(0, -0.75 * self.tile_width))
+
         pygame.display.update()
     
     def draw_move(self, player_move: tuple[int, int], player_token: int):
