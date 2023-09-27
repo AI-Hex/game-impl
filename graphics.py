@@ -11,7 +11,6 @@ PLAYER_1_COLOR = (61, 232, 239)
 PLAYER_2_COLOR = (255, 181,  31)
 HOVER_TEXT_COLOR = (39, 156, 170)
 
-
 # PURPLE AND GREEN
 # PLAYER_1_COLOR = (168, 134, 250)
 # PLAYER_2_COLOR = (34, 250, 114)
@@ -24,6 +23,9 @@ HOVER_TEXT_COLOR = (39, 156, 170)
 
 
 class Graphics(object):
+    """
+    Class to display objects to game window
+    """
 
     window_width: int 
     window_height: int 
@@ -186,6 +188,9 @@ class Graphics(object):
         pygame.display.update()
     
     def draw_move(self, player_move: tuple[int, int], player_token: int):
+        """
+        Draw player's token on the board
+        """
         row, column = player_move
         if player_token == PLAYER_1_TOKEN:
             self.display_surface.blit(self.token_image_player_1, self.click_board[row][column])
@@ -195,6 +200,9 @@ class Graphics(object):
         pygame.display.update()
     
     def draw_turn(self, player_turn: int):
+        """
+        Display current player's turn
+        """
         pygame.draw.rect(self.display_surface, WHITE, (0, 535, self.player_1_turn_text.get_width(), self.player_1_turn_text.get_height()))
         if player_turn == 0:
             self.display_surface.blit(self.player_1_turn_text, (0, 535))
@@ -203,6 +211,9 @@ class Graphics(object):
         pygame.display.update()
 
     def animate_win_path(self, path: list[tuple[int, int]], player_token: int):
+        """
+        Display flash animation for winning path of player's tokens
+        """
         winner_token_image = self.token_image_player_1 if player_token == PLAYER_1_TOKEN else self.token_image_player_2
         pygame.draw.rect(self.display_surface, WHITE, (0, 535, self.player_1_turn_text.get_width(), self.player_1_turn_text.get_height()))
         if player_token == PLAYER_1_TOKEN:
@@ -221,6 +232,9 @@ class Graphics(object):
             pygame.display.update()
 
     def draw_board(self, board: list[list[int, int]]):
+        """
+        Draw board with tokens
+        """
         self.draw_grid()
         for i in range(self.board_size):
             for j in range(self.board_size):
@@ -231,6 +245,9 @@ class Graphics(object):
         pygame.display.update()
 
     def draw_paused_game(self, player_1_human_flag: bool, player_2_human_flag: bool):
+        """
+        Draw settings menu
+        """
         self.display_surface.blit(self.pause_screen, (0, 0))
         if player_1_human_flag is True:
             self.display_surface.blit(self.selection_arrow, (240, 214))
@@ -243,6 +260,9 @@ class Graphics(object):
         pygame.display.update()
 
     def animate_reset_text(self):
+        """
+        Display hover animation for reset text
+        """
         hover_x, hover_y = pygame.mouse.get_pos()
         pygame.draw.rect(self.display_surface, WHITE, (0, 0, self.reset_text.get_width(), self.reset_text.get_height()))
         if self.reset_text_box.collidepoint(hover_x, hover_y) is True:
@@ -252,6 +272,9 @@ class Graphics(object):
         pygame.display.update()
 
     def animate_settings_text(self):
+        """
+        Display hover animation for settings text
+        """
         hover_x, hover_y = pygame.mouse.get_pos()
         pygame.draw.rect(self.display_surface, WHITE, (self.window_width - self.settings_text.get_width(), 0, self.settings_text.get_width(), self.settings_text.get_height()))
         if self.settings_text_box.collidepoint(hover_x, hover_y) is True:

@@ -7,6 +7,9 @@ PLAYER_2 = 2
 
 
 class Player(object):
+    """
+    Base player class
+    """
 
     token: int
 

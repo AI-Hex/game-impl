@@ -7,6 +7,10 @@ PLAYER_2_TOKEN = 2
 
 
 class Board(object):
+    """
+    Class containing data structures for the hex board
+    """
+
     board: list[list[int]]
     """Keeps track of the tokens (or lack of tokens) on the board"""
     board_size: int
@@ -25,6 +29,9 @@ class Board(object):
         self.board = [[UNOCCUPIED for _ in range(self.board_size)] for _ in range(self.board_size)]
     
     def is_empty(self):
+        """
+        Check if board is empty
+        """
         for i in range(self.board_size):
             for j in range(self.board_size):
                 if self.board[i][j] != UNOCCUPIED:
@@ -46,6 +53,9 @@ class Board(object):
         return self.board[row][column] != UNOCCUPIED
 
     def get_unoccupied_tiles(self) -> list[tuple[int, int]]:
+        """
+        Get all unoccupied tiles
+        """
         return [(i, j) for j in range(self.board_size) for i in range(self.board_size) if self.board[i][j] == UNOCCUPIED]
 
     def get_neighboring_tiles(self, tile_pos: tuple[int, int]) -> list[tuple[int, int]]:
@@ -86,14 +96,23 @@ class Board(object):
             return [(i, j) for (i, j) in result if self.board[i][j] == PLAYER_2_TOKEN]
 
     def __is_tile_on_right_border(self, tile_pos: tuple[int, int]) -> bool:
+        """
+        Check if tile is on the right border
+        """
         row, column = tile_pos
         return column == self.board_size - 1
 
     def __is_tile_on_bottom_border(self, tile_pos: tuple[int, int]) -> bool:
+        """
+        Check if tile is on the bottom border
+        """
         row, column = tile_pos
         return row == self.board_size - 1
 
     def __check_player_1_win(self) -> bool:
+        """
+        Check if player 1 wins
+        """
         visited_tiles = [[False for _ in range(self.board_size)] for _ in range(self.board_size)]
         queue = list()
         for row in range(self.board_size):
@@ -110,6 +129,9 @@ class Board(object):
         return False
 
     def __check_player_2_win(self) -> bool:
+        """
+        Check if player 2 wins
+        """
         visited_tiles = [[False for _ in range(self.board_size)] for _ in range(self.board_size)]
         queue = list()
         for column in range(self.board_size):
@@ -134,6 +156,9 @@ class Board(object):
         return False
 
     def __get_player_1_win_path(self) -> list[tuple[int, int]] | None:
+        """
+        Get the winning path for player 1
+        """
         visited_tiles = [[False for _ in range(self.board_size)] for _ in range(self.board_size)]
         path, queue = list(), list()
         win_path_flag = False
@@ -141,7 +166,7 @@ class Board(object):
             if win_path_flag is True:
                 break
             else:
-                path = list()  # clear_board the path added from last wrong itteration
+                path = list()  # last itteration was fruitless, continue with empty list
             if self.board[row][0] == PLAYER_1_TOKEN:
                 queue.append((row, 0))
                 while len(queue) > 0:
@@ -158,6 +183,9 @@ class Board(object):
         return None
 
     def __get_player_2_win_path(self) -> list[tuple[int, int]] | None:
+        """
+        Get the winning path for player 2
+        """
         visited_tiles = [[False for _ in range(self.board_size)] for _ in range(self.board_size)]
         path, queue = list(), list()
         win_path_flag = False
@@ -165,7 +193,7 @@ class Board(object):
             if win_path_flag is True:
                 break
             else:
-                path = list()  # clear_board the path added from last wrong itteration
+                path = list()  # last itteration was fruitless, continue with empty list
             if self.board[0][column] == PLAYER_2_TOKEN:
                 queue.append((0, column))
                 while len(queue) > 0:
@@ -182,6 +210,9 @@ class Board(object):
         return None
 
     def get_win_path(self) -> list[tuple[int, int]] | None:
+        """
+        Get the path that won the game
+        """
         if self.__check_player_1_win() is True:
             return self.__get_player_1_win_path()
         if self.__check_player_2_win() is True:
@@ -189,6 +220,9 @@ class Board(object):
         return None
 
     def get_win_token(self) -> int | None:
+        """
+        Get winner
+        """
         if self.__check_player_1_win() is True:
             return PLAYER_1_TOKEN
         if self.__check_player_2_win() is True:
