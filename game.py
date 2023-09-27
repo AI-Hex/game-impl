@@ -124,7 +124,6 @@ class Game(object):
         pygame.quit()
         sys.exit()
 
-
     def __handle_human_move(self):
         # Player loop
         while True:
