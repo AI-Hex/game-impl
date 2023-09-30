@@ -37,7 +37,6 @@ class Game(object):
         while True:
 
             if self.players[self.player_turn].is_ai() is True:
-                pygame.event.pump()  # tricks computer to think that events are beings processed
                 self.__handle_ai_move()
             else:
                 self.__handle_human_move()
@@ -126,6 +125,7 @@ class Game(object):
         """
         Handle AI's turn to make a move on the board
         """
+        pygame.event.pump()  # tricks computer to think that events are beings processed
         tile_pos = self.players[self.player_turn].get_move(self.game_board)
         if tile_pos is not None and self.game_board.is_tile_occupied(tile_pos) is False:
             self.game_board.make_move(tile_pos, self.players[self.player_turn].token)

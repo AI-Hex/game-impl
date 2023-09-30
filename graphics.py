@@ -145,7 +145,7 @@ class Graphics(object):
 
         self.display_surface = pygame.display.set_mode((self.window_width, self.window_height), depth=32)
         pygame.display.set_caption('Hex')
-        pygame.display.set_icon(self.token_image)
+        pygame.display.set_icon(self.hex_image)
 
         self.pause_screen = pygame.image.load('Sprites\\pause_screen.png')
 
