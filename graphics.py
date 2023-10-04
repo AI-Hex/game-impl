@@ -1,4 +1,4 @@
-import pygame, random
+import pygame, random, numpy
 from board import PLAYER_1_TOKEN, PLAYER_2_TOKEN
 from pygame.locals import *
 
@@ -231,16 +231,16 @@ class Graphics(object):
             self.fps_clock.tick(self.fps)
             pygame.display.update()
 
-    def draw_board(self, board: list[list[int, int]]):
+    def draw_board(self, board: numpy.ndarray):
         """
         Draw board with tokens
         """
         self.draw_grid()
         for i in range(self.board_size):
             for j in range(self.board_size):
-                if board[i][j] == PLAYER_1_TOKEN:
+                if board[i, j] == PLAYER_1_TOKEN:
                     self.display_surface.blit(self.token_image_player_1, self.click_board[i][j])
-                elif board[i][j] == PLAYER_2_TOKEN:
+                elif board[i, j] == PLAYER_2_TOKEN:
                     self.display_surface.blit(self.token_image_player_2, self.click_board[i][j])
         pygame.display.update()
 

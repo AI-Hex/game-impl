@@ -1,4 +1,4 @@
-import pygame
+import pygame, numpy
 
 # State of tile pieces in board
 UNOCCUPIED = 0
@@ -11,22 +11,22 @@ class Board(object):
     Class containing data structures for the hex board
     """
 
-    board: list[list[int]]
-    """Keeps track of the tokens (or lack of tokens) on the board"""
+    board: numpy.ndarray
+    '''Keeps track of the tokens (or lack of tokens) on the board'''
     board_size: int
 
     def __init__(self, board_size: int):
         """
         Initialize an empty hex board
         """
-        self.board = [[UNOCCUPIED for _ in range(board_size)] for _ in range(board_size)]
+        self.board = numpy.array([[UNOCCUPIED for _ in range(board_size)] for _ in range(board_size)])
         self.board_size = board_size
 
     def clear_board(self):
         """
         Reset the board
         """
-        self.board = [[UNOCCUPIED for _ in range(self.board_size)] for _ in range(self.board_size)]
+        self.board = numpy.array([[UNOCCUPIED for _ in range(self.board_size)] for _ in range(self.board_size)])
     
     def is_empty(self):
         """
@@ -34,7 +34,7 @@ class Board(object):
         """
         for i in range(self.board_size):
             for j in range(self.board_size):
-                if self.board[i][j] != UNOCCUPIED:
+                if self.board[i, j] != UNOCCUPIED:
                     return False
         return True
 
@@ -43,20 +43,20 @@ class Board(object):
         Place a player token on an unoccupied tile
         """
         row, column = tile_pos
-        self.board[row][column] = player_token
+        self.board[row, column] = player_token
 
     def is_tile_occupied(self, tile_pos: tuple[int, int]) -> bool:
         """
         Return whether the tile is occupied by a player's token
         """
         row, column = tile_pos
-        return self.board[row][column] != UNOCCUPIED
+        return self.board[row, column] != UNOCCUPIED
 
     def get_unoccupied_tiles(self) -> list[tuple[int, int]]:
         """
         Get all unoccupied tiles
         """
-        return [(i, j) for j in range(self.board_size) for i in range(self.board_size) if self.board[i][j] == UNOCCUPIED]
+        return [(i, j) for j in range(self.board_size) for i in range(self.board_size) if self.board[i, j] == UNOCCUPIED]
 
     def get_neighboring_tiles(self, tile_pos: tuple[int, int]) -> list[tuple[int, int]]:
         """
@@ -89,11 +89,11 @@ class Board(object):
         if by_token is None:
             return result
         if by_token == UNOCCUPIED:
-            return [(i, j) for (i, j) in result if self.board[i][j] == UNOCCUPIED]
+            return [(i, j) for (i, j) in result if self.board[i, j] == UNOCCUPIED]
         if by_token == PLAYER_1_TOKEN:
-            return [(i, j) for (i, j) in result if self.board[i][j] == PLAYER_1_TOKEN]
+            return [(i, j) for (i, j) in result if self.board[i, j] == PLAYER_1_TOKEN]
         if by_token == PLAYER_2_TOKEN:
-            return [(i, j) for (i, j) in result if self.board[i][j] == PLAYER_2_TOKEN]
+            return [(i, j) for (i, j) in result if self.board[i, j] == PLAYER_2_TOKEN]
 
     def __is_tile_on_right_border(self, tile_pos: tuple[int, int]) -> bool:
         """
@@ -116,7 +116,7 @@ class Board(object):
         visited_tiles = [[False for _ in range(self.board_size)] for _ in range(self.board_size)]
         queue = list()
         for row in range(self.board_size):
-            if self.board[row][0] == PLAYER_1_TOKEN:
+            if self.board[row, 0] == PLAYER_1_TOKEN:
                 queue.append((row, 0))
         while len(queue) > 0:
             i, j = queue.pop(0)
@@ -135,7 +135,7 @@ class Board(object):
         visited_tiles = [[False for _ in range(self.board_size)] for _ in range(self.board_size)]
         queue = list()
         for column in range(self.board_size):
-            if self.board[0][column] == PLAYER_2_TOKEN:
+            if self.board[0, column] == PLAYER_2_TOKEN:
                 queue.append((0, column))
         while len(queue) > 0:
             i, j = queue.pop(0)
@@ -167,7 +167,7 @@ class Board(object):
                 break
             else:
                 path = list()  # last itteration was fruitless, continue with empty list
-            if self.board[row][0] == PLAYER_1_TOKEN:
+            if self.board[row, 0] == PLAYER_1_TOKEN:
                 queue.append((row, 0))
                 while len(queue) > 0:
                     i, j = queue.pop(0)
@@ -194,7 +194,7 @@ class Board(object):
                 break
             else:
                 path = list()  # last itteration was fruitless, continue with empty list
-            if self.board[0][column] == PLAYER_2_TOKEN:
+            if self.board[0, column] == PLAYER_2_TOKEN:
                 queue.append((0, column))
                 while len(queue) > 0:
                     i, j = queue.pop(0)

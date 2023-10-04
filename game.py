@@ -64,7 +64,7 @@ class Game(object):
             for i in range(self.game_board.board_size):
                 for j in range(self.game_board.board_size):
                     if self.game_graphics.click_board[i][j].collidepoint(click_x, click_y):
-                        if self.game_board.is_tile_occupied((i, j)) is False:
+                        if self.game_board.is_tile_occupied((i, j)) == False:
                             return True
                         return False
         return False
@@ -127,7 +127,8 @@ class Game(object):
         """
         pygame.event.pump()  # tricks computer to think that events are beings processed
         tile_pos = self.players[self.player_turn].get_move(self.game_board)
-        if tile_pos is not None and self.game_board.is_tile_occupied(tile_pos) is False:
+        assert tile_pos != None
+        if tile_pos is not None and not self.game_board.is_tile_occupied(tile_pos):
             self.game_board.make_move(tile_pos, self.players[self.player_turn].token)
             self.game_graphics.draw_move(tile_pos, self.players[self.player_turn].token)
         self.__check_for_win(self.player_turn)
