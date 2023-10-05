@@ -1,5 +1,7 @@
 import pygame, sys, random
 from board import *
+from strategies import *
+from graph import *
 
 
 PLAYER_1 = 1
@@ -69,5 +71,27 @@ class AI_Minmax_Player(AI_Player):
     def __init__(self, token: int):
         super().__init__(token)
 
+    def get_opponent_token(self):
+        return 1 if self.token == 2 else 2
+
+    def find_max_value_move(self, minimax_results: list[float]) -> int:
+        maximum: float = max(minimax_results)
+
+        return minimax_results.index(maximum)
+
     def get_move(self, board: Board) -> tuple[int, int]:
-        pass
+        unoccupied_tiles = board.get_unoccupied_tiles()
+        possible_states: list[Board] = list()
+        strategy: Strategy = Strategy()
+        for tile in unoccupied_tiles:
+            new_board: Board
+            new_board = board.__copy__()
+            new_board.make_move(tile, self.token)
+            possible_states.append(new_board)
+        minmax_results: list[float] = list()
+        for state in possible_states:
+            minmax_results.append(strategy.alpha_beta_pruned_minimax(depth=1, isMaximizingPlayer=False, alpha=float("-inf"),
+                                                                     beta=float("inf"), board=state, player_token=self.get_opponent_token(), max_depth=3))
+        # return sorted(list(zip(minmax_results, unoccupied_tiles)))[0][1]
+        index: int = self.find_max_value_move(minmax_results)
+        return unoccupied_tiles[index]

@@ -34,7 +34,7 @@ class HexGraph(object):
         """
 
     def __copy__(self):
-        new_graph = HexGraph(self.board_size, copy.deepcopy(self.hex_nodes), copy.deepcopy(self.edges_matrix))
+        return HexGraph(self.board_size, copy.deepcopy(self.hex_nodes), copy.deepcopy(self.edges_matrix))
 
 
     def update_edge_value(self, node_value_1, node_value_2, new_distance):

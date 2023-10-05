@@ -43,7 +43,7 @@ class Board(object):
         new_board: Board
         new_board = Board(self.board_size)
         new_hex_nodes_by_position = copy.deepcopy(self.hex_nodes_by_position)
-        new_graph = self.graph.copy()
+        new_graph = self.graph.__copy__()
         new_board.hex_nodes_by_position = new_hex_nodes_by_position
         new_board.graph = new_graph
         return new_board
@@ -96,7 +96,7 @@ class Board(object):
                 self.graph.update_edge_value(node.node_value, neighbour_node.node_value, 0)
             elif neighbour_node.status != UNOCCUPIED:
                 self.graph.update_edge_value(node.node_value, neighbour_node.node_value, float("inf"))
-        print(node.node_value, self.graph.edges_matrix[node.node_value])
+        #print(node.node_value, self.graph.edges_matrix[node.node_value])
 
 
     def is_tile_occupied(self, tile_pos: tuple[int, int]) -> bool:
@@ -142,7 +142,7 @@ class Board(object):
         return resulting_list
 
     def get_available_nodes(self):
-        list_available_nodes: list[HexNode]
+        list_available_nodes: list[HexNode] = list()
         for i in range(self.board_size):
             for j in range(self.board_size):
                 self.board[i][j] == UNOCCUPIED

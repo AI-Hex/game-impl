@@ -8,9 +8,9 @@ class Strategy(object):
     def start_dijkstra(self, player: int, board: Board) -> int:
         source_nodes: list[HexNode]
         if player == 1: #player goal is to connect left and right side of the board
-            source_nodes = board.graph.get_first_column_tiles()
+            source_nodes = board.graph.get_first_column_tiles(player)
         else: #players goal is to connect top and bottom side of the board
-            source_nodes = board.graph.get_first_row_tiles()
+            source_nodes = board.graph.get_first_row_tiles(player)
         min_distance: int
         resulting_min_distance = float("inf")
         for source_node in source_nodes:
@@ -74,7 +74,8 @@ class Strategy(object):
                 new_board: Board
                 new_board = board.__copy__()
                 new_board.make_move(successor.position, player_token)
-                value = self.alpha_beta_pruned_minimax(successor, depth + 1, False, alpha, beta, new_board, new_player_token)
+                value = self.alpha_beta_pruned_minimax(depth=depth + 1, isMaximizingPlayer=False, alpha=alpha, beta=beta,
+                                                       board=new_board, player_token=new_player_token)
                 best_value = max(best_value, value)
                 alpha = max(alpha, best_value)
                 if beta <= alpha:
@@ -87,7 +88,8 @@ class Strategy(object):
                 new_board: Board
                 new_board = board.__copy__()
                 new_board.make_move(successor.position, player_token)
-                value = self.alpha_beta_pruned_minimax(successor, depth + 1, True, alpha, beta, new_board, new_player_token)
+                value = self.alpha_beta_pruned_minimax(depth=depth + 1, isMaximizingPlayer=True, alpha=alpha, beta=beta,
+                                                       board=new_board, player_token=new_player_token)
                 best_value = min(best_value, value)
                 beta = min(beta, best_value)
                 if beta <= alpha:
