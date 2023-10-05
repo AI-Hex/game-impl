@@ -5,6 +5,55 @@ UNOCCUPIED = 0
 PLAYER_1_TOKEN = 1
 PLAYER_2_TOKEN = 2
 
+move_list = {}
+
+
+def store(depth, state, move, score):
+    """Store record in the table
+
+    Args:
+        depth (int): Search depth
+        state (HexBoard): Board state
+        move (tuple): Best move for the board state
+        score (int): Score assigned to that state
+    """
+    if state not in move_list:
+        move_list[state] = {}
+
+    move_list[state][depth] = (move, score)
+
+
+def lookup(depth, state) -> tuple[float, tuple[int, int]]:
+    """Checks if TT contains a record for the given state
+
+    Args:
+        depth (int): Search depth
+        state (HexBoard): Board state
+
+    Returns:
+        int: 0: no entry found, 1: state found but lower than desired depth, 2:state found at desired depth
+        tuple: Best move for the state
+        int: Assigned score of the state
+    """
+
+    if state in move_list:
+        # State was already stored
+        if depth in move_list[state]:
+            # State of current depth was found so return move of that one
+            return move_list[state][depth][1], move_list[state][depth][0]
+        else:
+            # State was not found on this depth -> return False but still give best move found.
+            depths = [d for d in move_list[state]]
+
+            if len(depths) == 0:
+                return None, (None, None)  # if No entries found at all
+
+            maxdepth = numpy.max(depths)  # take only max depth
+
+            return move_list[state][maxdepth][1], move_list[state][maxdepth][0]  # Return the best move for max depth
+
+    return None, (None, None)
+
 
 class Board(object):
     """
@@ -21,6 +70,9 @@ class Board(object):
         """
         self.board = numpy.array([[UNOCCUPIED for _ in range(board_size)] for _ in range(board_size)])
         self.board_size = board_size
+
+    def to_string(self):
+        return self.board.tostring()
 
     def clear_board(self):
         """
@@ -166,7 +218,7 @@ class Board(object):
             if win_path_flag is True:
                 break
             else:
-                path = list()  # last itteration was fruitless, continue with empty list
+                path = list()  # last iteration was fruitless, continue with empty list
             if self.board[row, 0] == PLAYER_1_TOKEN:
                 queue.append((row, 0))
                 while len(queue) > 0:
@@ -228,3 +280,4 @@ class Board(object):
         if self.__check_player_2_win() is True:
             return PLAYER_2_TOKEN
         return None
+

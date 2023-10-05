@@ -103,7 +103,13 @@ class AI_Minmax_Player(AI_Player):
         successor_moves = [(i, j) for j in range(len(self.board)) for i in range(len(self.board)) if self.board[i, j] == UNOCCUPIED]
 
         if current_depth == self.max_depth or len(successor_moves) == 0:
-            return self.__evaluate_score(self.token), (None, None)
+            state_string = self.board.tostring()
+            if state_string in move_list:
+                return lookup(current_depth, state_string)
+            else:
+                evaluation = self.__evaluate_score(self.token)
+                store(current_depth, state_string, (None, None), evaluation)
+                return evaluation, (None, None)
         
         opponent_token = 1 if player_token == 2 else 2
 
@@ -233,7 +239,7 @@ class AI_Minmax_Player(AI_Player):
 
         if 0 <= row - 1:
             if self.board[row - 1, column] != opponent_token:
-                    result.append((row - 1, column))
+                result.append((row - 1, column))
         if 0 <= row - 1 and column + 1 < len(self.board):
             if self.board[row - 1, column + 1] != opponent_token:
                 result.append((row - 1, column + 1))
@@ -250,3 +256,6 @@ class AI_Minmax_Player(AI_Player):
             if self.board[row + 1, column] != opponent_token:
                 result.append((row + 1, column))
         return result
+
+class AI_Iterative_Deepening_Player(AI_Player):
+    pass
