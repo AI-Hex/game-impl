@@ -20,7 +20,7 @@ class Game(object):
         """
         Initialize necessary objects for a hex game
         """
-        self.game_board = Board(board_size)
+        Game.game_board = Board(board_size)
         self.game_graphics = Graphics(board_size)
         self.player_1 = player_1
         self.player_2 = player_2
@@ -125,8 +125,7 @@ class Game(object):
         """
         Handle AI's turn to make a move on the board
         """
-        pygame.event.pump()  # tricks computer to think that events are beings processed
-        tile_pos = self.players[self.player_turn].get_move(self.game_board)
+        tile_pos = self.players[self.player_turn].get_move()
         assert tile_pos != None
         if tile_pos is not None and not self.game_board.is_tile_occupied(tile_pos):
             self.game_board.make_move(tile_pos, self.players[self.player_turn].token)
