@@ -47,6 +47,9 @@ class Board(object):
                 neighbors_dict[(i, j)] = self.get_neighboring_tiles((i, j))
         
 
+    def to_string(self):
+        return self.board.tostring()
+
     def clear_board(self):
         """
         Reset the board

@@ -31,8 +31,8 @@ class Game(object):
         """
         Start a round of Hex
         """
+        self.__handle_paused_game()
         self.game_graphics.draw_grid()
-
         # Game loop
         while True:
 
@@ -75,6 +75,7 @@ class Game(object):
         """
         if self.game_board.check_victory() is True:
             self.game_graphics.animate_win_path(self.game_board.get_win_path(), player_turn + 1)
+            #print(move_list)
             while True:
                 for event in pygame.event.get():
                     if self.__check_for_quit(event) is True:
