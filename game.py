@@ -31,7 +31,6 @@ class Game(object):
         """
         Start a round of Hex
         """
-        self.__handle_paused_game()
         self.game_graphics.draw_grid()
         # Game loop
         while True:
