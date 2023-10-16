@@ -6,14 +6,16 @@ PLAYER_2_TOKEN = 2
 
 
 class HexNode(object):
-    position: tuple[int, int]
-    status: int
-    node_value: int
 
-    def __init__(self, position: tuple[int, int], node_value: int, status: int = UNOCCUPIED):
-        self.position = position
-        self.status = status
-        self.node_value = node_value
+    def __init__(self, position: tuple[int, int], node_value: int, special_node: str | None = None, status: int = UNOCCUPIED):
+        self.position: tuple[int, int] = position
+        self.status: int = status
+        self.node_value: int = node_value
+        # If it is a special node, it will have one of the following values: L, R, U, D. Otherwise it is None.
+        self.special_node = special_node
+        # Used in the two distance evaluation function
+        self.td_value: int | None = None
+        self.td_neighbour_values_list: list[int] = list()
 
     def __copy__(self):
         new_node = HexNode(self.position, self.node_value, self.status)
@@ -37,9 +39,9 @@ class HexGraph(object):
         return HexGraph(self.board_size, copy.deepcopy(self.hex_nodes), copy.deepcopy(self.edges_matrix))
 
 
-    def update_edge_value(self, node_value_1, node_value_2, new_distance):
-        self.edges_matrix[node_value_1][node_value_2] = new_distance
-        self.edges_matrix[node_value_2][node_value_1] = new_distance
+    def update_edge_value(self, node_value_1, node_value_2, new_distance_for_1, new_distance_for_2):
+        self.edges_matrix[node_value_1][node_value_2] = new_distance_for_1
+        self.edges_matrix[node_value_2][node_value_1] = new_distance_for_2
 
     def get_first_column_tiles(self, player_token: int) -> list[HexNode]:
         return [node for node in self.hex_nodes if node.node_value % self.board_size == 0 and (node.status == player_token or node.status == UNOCCUPIED)]

@@ -195,7 +195,7 @@ class AI_Minmax_Player(AI_Player):
 
         queue = [(i, j) for j in range(Board.board_size) for i in range(Board.board_size)]
         # sink_nodes = [(i, Board.board_size - 1) if player_token == 1 else (Board.board_size - 1, i) for i in range(Board.board_size)]
-        sink_position = 1 if player_token == 1 else 0
+        sink_position = 1 if player_token == 1 else 0  # Denotes if algoritm should move towards last column or last row
 
         # start dijkstra for source node
         opponent_token = 1 if player_token == 2 else 2
@@ -207,13 +207,13 @@ class AI_Minmax_Player(AI_Player):
             neighbors = [(0, i) for i in range(Board.board_size) if Board.board[0, i] != opponent_token]
         
         for neighbor in neighbors:
-                if neighbor in queue:
-                    n_i, n_j = neighbor
-                    new_distance = 0 if Board.board[n_i, n_j] == player_token else 1
-                    if new_distance < distances[n_i][n_j]:
-                        distances[n_i][n_j] = new_distance
-                    if neighbor[sink_position] == Board.board_size - 1:
-                        return distances[n_i][n_j]
+            if neighbor in queue:
+                n_i, n_j = neighbor
+                new_distance = 0 if Board.board[n_i, n_j] == player_token else 1
+                if new_distance < distances[n_i][n_j]:
+                    distances[n_i][n_j] = new_distance
+                if neighbor[sink_position] == Board.board_size - 1:
+                    return distances[n_i][n_j]
 
         # continue dijsktra for other nodes
         while len(queue) > 0:
@@ -262,20 +262,51 @@ class AI_Minmax_Player(AI_Player):
 
         return [(n_i, n_j) for (n_i, n_j) in adjacent_neighbors_dict[current_node] if Board.board[n_i, n_j] != opponent_token]
 
-    def __get_two_distance_score(self, node_one_position, node_two_position):
-        node_values_table = dict()
-        node_neighbour_values = dict()
-        queue = list()
-        neighbourhood_nodes = neighbourhood_dict[node_one_position][1]
-        for tile in neighbourhood_nodes:
-            node_values_table[tile] = 1
-            queue.append(tile)
+    def find_chain(self, player, current_node) -> set[HexNode]:
+        chain_set: set[HexNode] = set()
+        visited: list[HexNode] = list()
+        chain_set.add(current_node)
+        visited.append(current_node)
+        neighbouring_nodes: list[HexNode] = Board.find_all_neighbour_nodes(current_node, player)
+        while len(neighbouring_nodes) > 0:
+            neighbour_node = neighbouring_nodes.pop(0)
+            if neighbour_node not in visited and neighbour_node.status == current_node.status:
+                chain_set.add(neighbour_node)
+                neighbouring_nodes.extend(Board.find_all_neighbour_nodes(neighbour_node, player))
+            visited.append(neighbour_node)
+        return chain_set
+
+    def find_neighbourhood_nodes(self, starting_node, player_token):
+        resulting_set: set[HexNode] = set()
+        #First add the direct neighbour positions
+        chain_for_node = self.find_chain(player_token, starting_node)
+        for node in chain_for_node:
+            neighbours = Board.find_all_neighbour_nodes(node, UNOCCUPIED)
+            for neighbour in neighbours:
+                resulting_set.add(neighbour)
+        return resulting_set
+
+    def __get_two_distance_score(self, node_one_position: tuple[int, int], node_two_position: tuple[int, int], player_token: int):
+        queue: list[HexNode] = list()
+        start_node = Board.hex_nodes_by_position[node_one_position]
+        end_node = Board.hex_nodes_by_position[node_two_position]
+        neighbourhood_nodes = self.find_neighbourhood_nodes(start_node, player_token)
+        for neighbour in neighbourhood_nodes:
+            neighbour.td_value = 1
+            neighbour.td_neighbour_values_list.extend([0, 0])
+            queue.append(neighbour)
         while len(queue) > 0:
-            current_tile = queue.pop(0)
-            current_neighbourhood_nodes = neighbourhood_dict[current_tile][1]
+            current_node = queue.pop(0)
+            current_neighbourhood_nodes = self.find_neighbourhood_nodes(current_node, player_token)
             for neighbour in current_neighbourhood_nodes:
-                pass
-                #put neighbour_value(min(curr.neigbour_values) + 1)
+                if neighbour.td_value == None:
+                    neighbour.td_neighbour_values_list.append(min(current_node.td_neighbour_values_list) + 1)
+                    if len(neighbour.td_neighbour_values_list) > 1:
+                        neighbour.td_value = max(neighbour.td_neighbour_values_list) + 1
+                        queue.append(neighbour)
+        if end_node.td_value != None:
+            return end_node.td_value
+        return 10000
 
 
 
@@ -312,109 +343,117 @@ class AI_Minmax_Player(AI_Player):
 
 class AI_Minmax_Graph_Player(AI_Player):
     max_depth = 3
-    class Strategy(object):
 
-        def start_dijkstra(self, player: int) -> int:
-            source_nodes: list[HexNode]
-            if player == 1:  # player goal is to connect left and right side of the board
-                source_nodes = Board.graph.get_first_column_tiles(player)
-            else:  # players goal is to connect top and bottom side of the board
-                source_nodes = Board.graph.get_first_row_tiles(player)
-            min_distance: int
-            resulting_min_distance = float("inf")
-            for source_node in source_nodes:
-                current_distances = self.dijkstra(source_node, player)
-                curr_min = min(current_distances)
-                if curr_min < resulting_min_distance:
-                    resulting_min_distance = curr_min
-            return resulting_min_distance
+    def start_dijkstra(self, player: int) -> int:
+        source_nodes: list[HexNode]
+        if player == 1:  # player goal is to connect left and right side of the board
+            source_nodes = Board.graph.get_first_column_tiles(player)
+        else:  # players goal is to connect top and bottom side of the board
+            source_nodes = Board.graph.get_first_row_tiles(player)
+        min_distance: int
+        resulting_min_distance = float("inf")
+        for source_node in source_nodes:
+            current_distances = self.dijkstra(source_node, player)
+            curr_min = min(current_distances)
+            if curr_min < resulting_min_distance:
+                resulting_min_distance = curr_min
+        return resulting_min_distance
 
-        def find_node_with_min_distance(self, list_nodes: list[HexNode], distances: list[int]) -> HexNode:
-            minimum = float("inf")
-            found_node = list_nodes[0]
-            for node in list_nodes:
-                if distances[node.node_value] < minimum:
-                    minimum = distances[node.node_value]
-                    found_node = node
-            return found_node
+    def find_node_with_min_distance(self, list_nodes: list[HexNode], distances: list[int]) -> HexNode:
+        minimum = float("inf")
+        found_node = list_nodes[0]
+        for node in list_nodes:
+            if distances[node.node_value] < minimum:
+                minimum = distances[node.node_value]
+                found_node = node
+        return found_node
 
-        def dijkstra(self, source: HexNode, player: int) -> list[int]:
-            distances: list[int]
-            queue: list[HexNode]
-            distances = list()
-            queue = list()
-            for node in Board.graph.hex_nodes:
-                distances.append(float("inf"))
-                queue.append(node)
-            distances[source.node_value] = 0 if source.status == player else 1
+    def dijkstra(self, source: HexNode, player_token: int) -> list[int]:
+        distances: list[int]
+        queue: list[HexNode]
+        distances = list()
+        queue = list()
+        for node in Board.graph.hex_nodes:
+            distances.append(float("inf"))
+            queue.append(node)
+        distances[source.node_value] = 0 if source.status == player_token else 1
+        #distances[source.node_value] = 1
 
-            while len(queue) > 0:
-                current_node = self.find_node_with_min_distance(queue, distances)
-                queue.remove(current_node)
+        while len(queue) > 0:
+            current_node = self.find_node_with_min_distance(queue, distances)
+            queue.remove(current_node)
 
-                neighbours = Board.find_all_neighbour_nodes(current_node, player)
-                for neighbour in neighbours:
-                    if neighbour in queue:
-                        new_distance = distances[current_node.node_value] + \
-                                       Board.graph.edges_matrix[current_node.node_value][neighbour.node_value]
-                        if new_distance < distances[neighbour.node_value]:
-                            distances[neighbour.node_value] = new_distance
+            neighbours = Board.find_all_neighbour_nodes(current_node, player_token)
+            for neighbour in neighbours:
+                if neighbour in queue:
+                    new_distance = distances[current_node.node_value] + \
+                                   Board.graph.edges_matrix[current_node.node_value][neighbour.node_value]
+                    if new_distance < distances[neighbour.node_value]:
+                        distances[neighbour.node_value] = new_distance
+        board_size: int = Board.board_size
+        if player_token == PLAYER_1_TOKEN: # last column
+            resulting_distances = [distances[i] for i in range(len(distances)) if i % board_size == board_size - 1]
+        else: #last row
+            num_nodes = board_size * board_size
+            resulting_distances = [distances[i] for i in range(num_nodes - board_size, num_nodes)]
+        return resulting_distances
 
-            return distances
+    def evaluate_score(self, player_token: int, num_turns: int):
+        opponent_player = 1 if player_token == 2 else 2
+        opponent_score = self.start_dijkstra(opponent_player)
+        player_score = self.start_dijkstra(player_token)
+        evaluation = opponent_score - player_score - num_turns
+        return evaluation
 
-        def evaluate_score(self, player_token: int, num_turns: int):
-            opponent_player = 1 if player_token == 2 else 2
-            opponent_score = self.start_dijkstra(opponent_player)
-            print("Opponent score: ", opponent_score)
-            player_score = self.start_dijkstra(player_token)
-            print("Player score: ", player_score)
-            evaluation = opponent_score - player_score - num_turns
-            print(evaluation)
-            return evaluation
+    def get_moves(self):  # get_unoccupied_tiles
+        return Board.get_available_nodes()
 
-        def get_moves(self):  # get_unoccupied_tiles
-            return Board.get_available_nodes()
+    def alpha_beta_pruned_minimax(self, depth: int, isMaximizingPlayer: bool, alpha: int, beta: int,
+                                  player_token: int, max_depth: int = 3):
+        pygame.event.clear()
+        successors = self.get_moves()
 
-        def alpha_beta_pruned_minimax(self, depth: int, isMaximizingPlayer: bool, alpha: int, beta: int,
-                                      player_token: int, max_depth: int = 3):
-            pygame.event.clear()
-            successors = self.get_moves()
-            if depth == max_depth or len(successors) == 0:
-                return self.evaluate_score(player_token, depth)
+        if depth == max_depth or len(successors) == 0:
+            return self.evaluate_score(self.token, depth)
 
-            new_player_token = 1 if player_token == 2 else 2
+        if depth == 1:
+            result = self.evaluate_score(self.token, depth)
+            if result == 9999: #it's a winning move
+                return float('inf')
 
-            if isMaximizingPlayer:
-                best_value = float("-inf")
-                for successor in successors:
-                    #new_board: Board
-                    #new_board = board.__copy__()
-                    #new_board.make_move(successor.position, player_token)
-                    Board.make_move(successor.position, player_token)
-                    value = self.alpha_beta_pruned_minimax(depth=depth + 1, isMaximizingPlayer=False, alpha=alpha,
-                                                           beta=beta, player_token=new_player_token)
-                    Board.remove_move(successor.position)
-                    best_value = max(best_value, value)
-                    alpha = max(alpha, best_value)
-                    if beta <= alpha:
-                        break
-                return best_value
+        new_player_token = 1 if player_token == 2 else 2
 
-            else:
-                best_value = float("inf")
-                for successor in successors:
-                    #new_board: Board
-                    #new_board = board.__copy__()
-                    #new_board.make_move(successor.position, player_token)
-                    Board.make_move(successor.position, player_token)
-                    value = self.alpha_beta_pruned_minimax(depth=depth + 1, isMaximizingPlayer=True, alpha=alpha,
-                                                           beta=beta, player_token=new_player_token)
-                    Board.remove_move(successor.position)
-                    best_value = min(best_value, value)
-                    beta = min(beta, best_value)
-                    if beta <= alpha:
-                        break
-                return best_value
+        if isMaximizingPlayer:
+            best_value = float("-inf")
+            for successor in successors:
+                #new_board: Board
+                #new_board = board.__copy__()
+                #new_board.make_move(successor.position, player_token)
+                Board.make_move(successor.position, player_token)
+                value = self.alpha_beta_pruned_minimax(depth=depth + 1, isMaximizingPlayer=False, alpha=alpha,
+                                                       beta=beta, player_token=new_player_token)
+                Board.remove_move(successor.position)
+                best_value = max(best_value, value)
+                alpha = max(alpha, best_value)
+                if beta <= alpha:
+                    break
+            return best_value
+
+        else:
+            best_value = float("inf")
+            for successor in successors:
+                #new_board: Board
+                #new_board = board.__copy__()
+                #new_board.make_move(successor.position, player_token)
+                Board.make_move(successor.position, player_token)
+                value = self.alpha_beta_pruned_minimax(depth=depth + 1, isMaximizingPlayer=True, alpha=alpha,
+                                                       beta=beta, player_token=new_player_token)
+                Board.remove_move(successor.position)
+                best_value = min(best_value, value)
+                beta = min(beta, best_value)
+                if beta <= alpha:
+                    break
+            return best_value
 
     def __init__(self, token: int):
         super().__init__(token)
@@ -430,20 +469,22 @@ class AI_Minmax_Graph_Player(AI_Player):
     def get_move(self) -> tuple[int, int]:
         unoccupied_tiles = Board.get_unoccupied_tiles()
         possible_states: list[Board] = list()
-        strategy: AI_Minmax_Graph_Player.Strategy = self.Strategy()
+        #strategy: AI_Minmax_Graph_Player.Strategy = self.Strategy()
         minmax_results: list[float] = list()
+        dijkstra_results: list[float] = list()
         for tile in unoccupied_tiles:
             #new_board: Board
             #new_board = board.__copy__()
             #new_board.make_move(tile, self.token)
             #possible_states.append(new_board)
             Board.make_move(tile, self.token)
-            minmax_results.append(
-                strategy.alpha_beta_pruned_minimax(depth=1, isMaximizingPlayer=False, alpha=float("-inf"),
+            value = self.alpha_beta_pruned_minimax(depth=1, isMaximizingPlayer=False, alpha=float("-inf"),
                                                    beta=float("inf"),
-                                                   player_token=self.get_opponent_token(), max_depth=3))
+                                                   player_token=self.get_opponent_token(), max_depth=3)
+            minmax_results.append(value)
             Board.remove_move(tile)
         # return sorted(list(zip(minmax_results, unoccupied_tiles)))[0][1]
         index: int = self.find_max_value_move(minmax_results)
         #print(Board.graph.edges_matrix)
+        #print(dijkstra_results[index])
         return unoccupied_tiles[index]

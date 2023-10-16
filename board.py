@@ -69,7 +69,7 @@ class Board(object):
                 value_counter += 1
         Board.board = numpy.array(new_board)
         num_nodes = Board.board_size * Board.board_size
-        edges_matrix = [[float("inf") for _ in range(num_nodes)] for _ in range(num_nodes)]
+        edges_matrix = [[10000 for _ in range(num_nodes)] for _ in range(num_nodes)]
         Board.graph = HexGraph(board_size=Board.board_size, hex_nodes=created_nodes, edges_matrix=edges_matrix)
         Board.update_initial_edges()
 
@@ -81,19 +81,19 @@ class Board(object):
         for node in nodes_list:
             node_value = node.node_value
             if 0 <= node_value - Board.board_size <= num_nodes - 1:
-                Board.graph.update_edge_value(node_value, node_value - Board.board_size, 1)
+                Board.graph.update_edge_value(node_value, node_value - Board.board_size, 1, 1)
             if 0 <= node_value + Board.board_size <= num_nodes - 1:
-                Board.graph.update_edge_value(node_value, node_value + Board.board_size, 1)
+                Board.graph.update_edge_value(node_value, node_value + Board.board_size, 1, 1)
             if node_value % Board.board_size != Board.board_size - 1:
                 if 0 <= node_value - Board.board_size + 1 <= num_nodes - 1:
-                    Board.graph.update_edge_value(node_value, node_value - Board.board_size + 1, 1)
+                    Board.graph.update_edge_value(node_value, node_value - Board.board_size + 1, 1, 1)
                 if 0 <= node_value + 1 <= num_nodes - 1:
-                    Board.graph.update_edge_value(node_value, node_value + 1, 1)
+                    Board.graph.update_edge_value(node_value, node_value + 1, 1, 1)
             if node_value % Board.board_size != 0:
                 if 0 <= node_value + Board.board_size - 1 <= num_nodes - 1:
-                    Board.graph.update_edge_value(node_value, node_value + Board.board_size - 1, 1)
+                    Board.graph.update_edge_value(node_value, node_value + Board.board_size - 1, 1, 1)
                 if 0 <= node_value - 1 <= num_nodes - 1:
-                    Board.graph.update_edge_value(node_value, node_value - 1, 1)
+                    Board.graph.update_edge_value(node_value, node_value - 1, 1, 1)
             # print(node.node_value)
             # print(self.graph.edges_matrix[counter])
 
@@ -130,9 +130,11 @@ class Board(object):
         for position in neighbour_positions:
             neighbour_node = Board.hex_nodes_by_position[position]
             if node.status == neighbour_node.status:
-                Board.graph.update_edge_value(node.node_value, neighbour_node.node_value, 0)
-            elif neighbour_node.status != UNOCCUPIED:
-                Board.graph.update_edge_value(node.node_value, neighbour_node.node_value, float("inf"))
+                Board.graph.update_edge_value(node.node_value, neighbour_node.node_value, 0, 0)
+            elif neighbour_node.status == UNOCCUPIED:
+                Board.graph.update_edge_value(node.node_value, neighbour_node.node_value, 1, 0)
+            else: #neighbour_node.status == opponent_token:
+                Board.graph.update_edge_value(node.node_value, neighbour_node.node_value, 10000, 10000)
 
     @staticmethod
     def remove_move(position: tuple[int, int]):
@@ -142,13 +144,17 @@ class Board(object):
         for position in neighbour_positions:
             neighbour_node = Board.hex_nodes_by_position[position]
             if node.status == neighbour_node.status: #It was set to 0 because they were the same color, now should be 1
-                Board.graph.update_edge_value(node.node_value, neighbour_node.node_value, 1)
-            elif neighbour_node.status != UNOCCUPIED: #It was set to inf if it was opponents tile, now should be 1
-                Board.graph.update_edge_value(node.node_value, neighbour_node.node_value, 1)
+                Board.graph.update_edge_value(node.node_value, neighbour_node.node_value, 0, 1)
+            elif neighbour_node.status == UNOCCUPIED:
+                Board.graph.update_edge_value(node.node_value, neighbour_node.node_value, 1, 1)
+            else: #neighbour_node.status == opponent_token, it was set to inf if it was opponents tile, now should be 1
+                Board.graph.update_edge_value(node.node_value, neighbour_node.node_value, 0, 1)
         node.status = UNOCCUPIED
 
     @staticmethod
-    def find_all_neighbour_nodes(current_node: HexNode, player_token) -> list[HexNode]:
+    def find_all_neighbour_nodes(current_node: HexNode, player_token: int) -> list[HexNode]:
+        if current_node.special_node != None:
+            return Board.find_all_neighbour_nodes_for_special_node(current_node, player_token)
         positions_list = adjacent_neighbors_dict[current_node.position]
         resulting_list: list[HexNode] = list()
         for position in positions_list:
@@ -156,6 +162,12 @@ class Board(object):
             if node.status == player_token or node.status == UNOCCUPIED:
                 resulting_list.append(node)
         return resulting_list
+
+    @staticmethod
+    def find_all_neighbour_nodes_for_special_node(current_node: HexNode, player_token: int) -> list[HexNode]:
+        if current_node.special_node == 'L':
+            pass
+
 
     @staticmethod
     def get_available_nodes():
