@@ -7,12 +7,10 @@ PLAYER_2_TOKEN = 2
 
 class HexNode(object):
 
-    def __init__(self, position: tuple[int, int], node_value: int, special_node: str | None = None, status: int = UNOCCUPIED):
+    def __init__(self, position: tuple[int, int], node_value: int, status: int = UNOCCUPIED):
         self.position: tuple[int, int] = position
         self.status: int = status
         self.node_value: int = node_value
-        # If it is a special node, it will have one of the following values: L, R, U, D. Otherwise it is None.
-        self.special_node = special_node
         # Used in the two distance evaluation function
         self.td_value: int | None = None
         self.td_neighbour_values_list: list[int] = list()
@@ -20,7 +18,21 @@ class HexNode(object):
     def __copy__(self):
         new_node = HexNode(self.position, self.node_value, self.status)
         return new_node
+    
+    def is_special_node(self):
+        return False
 
+
+class SpecialHexNode(HexNode):
+
+    def __init__(self, position: tuple[int, int], node_value: int, status: int = UNOCCUPIED, special_node_value: int = 0, board_size: int = 6):
+        super().__init__(position, node_value, status)
+        self.special_node_value = special_node_value
+        board_size = board_size
+    
+    def is_special_node(self):
+        return True
+    
 
 class HexGraph(object):
     hex_nodes: list[HexNode]

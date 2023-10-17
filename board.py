@@ -40,6 +40,12 @@ class Board(object):
     graph: HexGraph
     hex_nodes_by_position: dict[tuple[int, int], HexNode]
 
+    special_node_neighbors: list[list[tuple[int, int]]]
+    special_node_left: SpecialHexNode
+    special_node_top: SpecialHexNode
+    special_node_right: SpecialHexNode
+    special_node_bottom: SpecialHexNode
+
     def __init__(self, board_size: int):
         """
         Initialize an empty hex board
@@ -51,6 +57,16 @@ class Board(object):
         for i in range(board_size):
             for j in range(board_size):
                 adjacent_neighbors_dict[(i, j)] = self.get_neighboring_tiles((i, j))
+        Board.special_node_neighbors = [
+                [(i, 0) for i in range(board_size)],
+                [(0, i) for i in range(board_size)],
+                [(i, board_size - 1) for i in range(board_size)],
+                [(board_size - 1, i) for i in range(board_size)]        
+            ]
+        Board.special_node_left = SpecialHexNode(None, None, PLAYER_1_TOKEN, 0)
+        Board.special_node_top = SpecialHexNode(None, None, PLAYER_2_TOKEN, 1)
+        Board.special_node_right = SpecialHexNode(None, None, PLAYER_1_TOKEN, 2)
+        Board.special_node_bottom = SpecialHexNode(None, None, PLAYER_2_TOKEN, 3)
 
     @staticmethod
     def create_initial_nodes_and_board():
@@ -153,21 +169,26 @@ class Board(object):
 
     @staticmethod
     def find_all_neighbour_nodes(current_node: HexNode, player_token: int) -> list[HexNode]:
-        if current_node.special_node != None:
-            return Board.find_all_neighbour_nodes_for_special_node(current_node, player_token)
-        positions_list = adjacent_neighbors_dict[current_node.position]
+        positions_list = list()
+        if current_node.is_special_node() == True:
+            positions_list = Board.special_node_neighbors[current_node.special_node_value]
+        else:
+            positions_list = adjacent_neighbors_dict[current_node.position]
         resulting_list: list[HexNode] = list()
         for position in positions_list:
             node = Board.hex_nodes_by_position[position]
             if node.status == player_token or node.status == UNOCCUPIED:
                 resulting_list.append(node)
+        if current_node.is_special_node() == False:
+            if current_node.position[1] == 0:
+                resulting_list.append(Board.special_node_left)
+            if current_node.position[0] == 0:
+                resulting_list.append(Board.special_node_top)
+            if current_node.position[1] == Board.board_size - 1:
+                resulting_list.append(Board.special_node_right)
+            if current_node.position[0] == Board.board_size - 1:
+                resulting_list.append(Board.special_node_bottom)
         return resulting_list
-
-    @staticmethod
-    def find_all_neighbour_nodes_for_special_node(current_node: HexNode, player_token: int) -> list[HexNode]:
-        if current_node.special_node == 'L':
-            pass
-
 
     @staticmethod
     def get_available_nodes():

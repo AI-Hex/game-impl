@@ -106,12 +106,13 @@ class AI_Minmax_Player(AI_Player):
         successor_moves = sorted([(i, j) for j in range(Board.board_size) for i in range(Board.board_size) if Board.board[i, j] == UNOCCUPIED], key=lambda x: abs(x[0] - (Board.board_size - 1)/2) + abs(x[1] - (Board.board_size - 1)/2))
 
         if current_depth == 1:
-            result = self.__evaluate_score(self.token, current_depth, False)
+            result = self.__evaluate_score(self.token, current_depth, True)
             if result == 9999: #it's a winning move
                 return float('inf'), (None, None)
 
         if current_depth == self.max_depth or len(successor_moves) == 0:
-            return self.__evaluate_score(self.token, current_depth, False), (None, None)
+            #return self.__get_two_distance_score(SpecialHexNode(None, None, self.token, 1), SpecialHexNode(None, None, self.token, 3), self.token), (None, None)
+             return self.__evaluate_score(self.token, current_depth, True), (None, None)
         
         opponent_token = 1 if player_token == 2 else 2
 
@@ -168,8 +169,10 @@ class AI_Minmax_Player(AI_Player):
         """
         opponent_token = 1 if player_token == 2 else 2
         if is_two_distance_evaluation:
-            opponent_score = self.__get_two_distance_score(opponent_token)
-            player_score = self.__get_two_distance_score(player_token)
+            opponent_score = self.__get_two_distance_score(Board.special_node_left if opponent_token == 1 else Board.special_node_top, 
+                                                           Board.special_node_right if opponent_token == 1 else Board.special_node_bottom, opponent_token)
+            player_score = self.__get_two_distance_score(Board.special_node_left if player_token == 1 else Board.special_node_top, 
+                                                         Board.special_node_right if player_token == 1 else Board.special_node_bottom, player_token)
             return opponent_score - player_score
         opponent_score = self.__get_dijkstra_score(opponent_token)
         player_score = self.__get_dijkstra_score(player_token)
@@ -270,7 +273,7 @@ class AI_Minmax_Player(AI_Player):
         neighbouring_nodes: list[HexNode] = Board.find_all_neighbour_nodes(current_node, player)
         while len(neighbouring_nodes) > 0:
             neighbour_node = neighbouring_nodes.pop(0)
-            if neighbour_node not in visited and neighbour_node.status == current_node.status:
+            if neighbour_node not in visited and neighbour_node.status == player:
                 chain_set.add(neighbour_node)
                 neighbouring_nodes.extend(Board.find_all_neighbour_nodes(neighbour_node, player))
             visited.append(neighbour_node)
@@ -280,17 +283,24 @@ class AI_Minmax_Player(AI_Player):
         resulting_set: set[HexNode] = set()
         #First add the direct neighbour positions
         chain_for_node = self.find_chain(player_token, starting_node)
+        print("Start: ", starting_node.position, "CHAIN: ", [node.position for node in chain_for_node])
         for node in chain_for_node:
+            
             neighbours = Board.find_all_neighbour_nodes(node, UNOCCUPIED)
+            print("NEIGHBORS", [node.position for node in neighbours])
             for neighbour in neighbours:
                 resulting_set.add(neighbour)
         return resulting_set
 
-    def __get_two_distance_score(self, node_one_position: tuple[int, int], node_two_position: tuple[int, int], player_token: int):
+    def __get_two_distance_score(self, node_one_position: HexNode, node_two_position: HexNode, player_token: int):
+        print("----------------START OF TWO DISTANCE--------------------")
+        print("BOARD", Board.board)
         queue: list[HexNode] = list()
-        start_node = Board.hex_nodes_by_position[node_one_position]
-        end_node = Board.hex_nodes_by_position[node_two_position]
+        start_node = node_one_position
+        end_node = node_two_position
+        print("START NODE ", start_node.position)
         neighbourhood_nodes = self.find_neighbourhood_nodes(start_node, player_token)
+        print("NEIGHBORS F START: ", [node.position for node in neighbourhood_nodes])
         for neighbour in neighbourhood_nodes:
             neighbour.td_value = 1
             neighbour.td_neighbour_values_list.extend([0, 0])
@@ -298,14 +308,32 @@ class AI_Minmax_Player(AI_Player):
         while len(queue) > 0:
             current_node = queue.pop(0)
             current_neighbourhood_nodes = self.find_neighbourhood_nodes(current_node, player_token)
+            print("Now in queue ", current_node.position, " with neighbors ", [node.position for node in current_neighbourhood_nodes])
             for neighbour in current_neighbourhood_nodes:
+                print(neighbour.td_value, neighbour.position)
                 if neighbour.td_value == None:
+                    print("hi", neighbour.is_special_node())
+                    if neighbour.is_special_node() == True and neighbour != end_node:
+                        continue
+                    print("BYE")
                     neighbour.td_neighbour_values_list.append(min(current_node.td_neighbour_values_list) + 1)
                     if len(neighbour.td_neighbour_values_list) > 1:
                         neighbour.td_value = max(neighbour.td_neighbour_values_list) + 1
+                        print(neighbour.td_value, "gi")
                         queue.append(neighbour)
         if end_node.td_value != None:
-            return end_node.td_value
+            evaluation = end_node.td_value
+            print("FINAL VALUE", end_node.td_value)
+            for i, j in Board.hex_nodes_by_position:
+                node = Board.hex_nodes_by_position[(i, j)]
+                node.td_value = None
+                node.td_neighbour_values_list.clear()
+            Board.special_node_top.td_value, Board.special_node_right.td_value, Board.special_node_bottom.td_value, Board.special_node_left.td_value = None, None, None, None
+            Board.special_node_left.td_neighbour_values_list.clear()
+            Board.special_node_top.td_neighbour_values_list.clear()
+            Board.special_node_right.td_neighbour_values_list.clear()
+            Board.special_node_bottom.td_neighbour_values_list.clear()
+            return evaluation
         return 10000
 
 

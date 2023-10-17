@@ -131,7 +131,7 @@ class Game(object):
             self.game_board.make_move(tile_pos, self.players[self.player_turn].token)
             self.game_graphics.draw_move(tile_pos, self.players[self.player_turn].token)
         self.__check_for_win(self.player_turn)
-        print(self.player_2.start_dijkstra(PLAYER_2_TOKEN))
+        # print(self.player_2.start_dijkstra(PLAYER_2_TOKEN))
 
 
     def __handle_move(self, tile_pos: tuple[int, int]):
