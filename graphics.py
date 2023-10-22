@@ -1,4 +1,4 @@
-import pygame, random
+import pygame, random, numpy
 from board import PLAYER_1_TOKEN, PLAYER_2_TOKEN
 from pygame.locals import *
 
@@ -9,11 +9,23 @@ WHITE = (255, 255, 255)
 BOARD_COLOR = (0, 0, 0)
 PLAYER_1_COLOR = (61, 232, 239)
 PLAYER_2_COLOR = (255, 181,  31)
+HOVER_TEXT_COLOR = (39, 156, 170)
 
-FPS = 4
+# PURPLE AND GREEN
+# PLAYER_1_COLOR = (168, 134, 250)
+# PLAYER_2_COLOR = (34, 250, 114)
+# HOVER_TEXT_COLOR = (61, 232, 239)
+
+# ORANGE AND BLUE
+# PLAYER_1_COLOR = (61, 232, 239)
+# PLAYER_2_COLOR = (255, 181,  31)
+# HOVER_TEXT_COLOR = (255, 215, 0)
 
 
 class Graphics(object):
+    """
+    Class to display objects to game window
+    """
 
     window_width: int 
     window_height: int 
@@ -35,6 +47,8 @@ class Graphics(object):
     token_image_player_1: pygame.Surface
     token_image_player_2: pygame.Surface
     pause_screen: pygame.Surface
+
+    fps: int
 
     def __init__(self, board_size: int):
         """
@@ -101,20 +115,53 @@ class Graphics(object):
         self.top_right_border_2 = pygame.image.load('Sprites\\top_right_border_2.png')
         self.top_right_border_2 = pygame.transform.smoothscale(self.top_right_border_2, (2.5 * self.tile_width, 2.5 * self.tile_width * self.top_right_border_2.get_height() / self.top_right_border_2.get_width()))
         self.top_right_border_2.fill(PLAYER_2_COLOR, special_flags=BLEND_RGB_MULT)
+        self.reset_text = pygame.image.load('Sprites\\reset_text.png')
+        self.settings_text = pygame.image.load('Sprites\\settings_text.png')
+
+        self.hover_reset_text = self.reset_text.copy()
+        self.hover_reset_text.fill(HOVER_TEXT_COLOR, special_flags=BLEND_RGB_ADD)
+        self.reset_text_box = pygame.Rect(40, 15, 132, 62)
+        self.hover_settings_text = self.settings_text.copy()
+        self.hover_settings_text.fill(HOVER_TEXT_COLOR, special_flags=BLEND_RGB_ADD)
+        self.settings_text_box = pygame.Rect(580, 15, 184, 62)
+
+        self.selection_arrow = pygame.image.load('Sprites\\selection_arrow.png')
+        self.selection_arrow_2 = pygame.image.load('Sprites\\selection_arrow_2.png')
+        self.player_1_human_box = pygame.Rect(82, 208, 129, 43)
+        self.player_1_ai_box = pygame.Rect(163, 310, 45, 43)
+        self.player_2_human_box = pygame.Rect(590, 208, 129, 43)
+        self.player_2_ai_box = pygame.Rect(590, 310, 45, 43)
+        self.go_back_box = pygame.Rect(42, 530, 153, 45) 
+        self.save_changes_box = pygame.Rect(494, 530, 257, 53)
+        self.player_1_turn_text = pygame.image.load('Sprites\\player_1_turn_text.png')
+        self.player_1_turn_text.fill(PLAYER_1_COLOR, special_flags=BLEND_RGB_ADD)
+        self.player_2_turn_text = pygame.image.load('Sprites\\player_2_turn_text.png')
+        self.player_2_turn_text.fill(PLAYER_2_COLOR, special_flags=BLEND_RGB_ADD)
+        self.player_1_wins_text = pygame.image.load('Sprites\\player_1_wins_text.png')
+        self.player_1_wins_text.fill(PLAYER_1_COLOR, special_flags=BLEND_RGB_ADD)
+        self.player_2_wins_text = pygame.image.load('Sprites\\player_2_wins_text.png')
+        self.player_2_wins_text.fill(PLAYER_2_COLOR, special_flags=BLEND_RGB_ADD)
+        self.player_turn_box = pygame.Rect(0, 680, self.player_1_turn_text.get_width(), self.player_1_turn_text.get_height())
 
         self.display_surface = pygame.display.set_mode((self.window_width, self.window_height), depth=32)
         pygame.display.set_caption('Hex')
-        pygame.display.set_icon(self.token_image)
+        pygame.display.set_icon(self.hex_image)
 
         self.pause_screen = pygame.image.load('Sprites\\pause_screen.png')
 
         self.fps_clock = pygame.time.Clock() 
+        self.fps = 5
 
     def draw_grid(self):
         """
         Draw an empty grid
         """
         self.display_surface.fill(WHITE)
+
+        # Draw text
+        self.display_surface.blit(self.reset_text, (0, 0))
+        self.display_surface.blit(self.settings_text, (self.window_width - self.settings_text.get_width(), 0))
+        self.display_surface.blit(self.player_1_turn_text, (0, 535))
 
         # Draw hex tiles not on border
         for i in range(self.board_size):
@@ -141,38 +188,97 @@ class Graphics(object):
         pygame.display.update()
     
     def draw_move(self, player_move: tuple[int, int], player_token: int):
+        """
+        Draw player's token on the board
+        """
         row, column = player_move
         if player_token == PLAYER_1_TOKEN:
             self.display_surface.blit(self.token_image_player_1, self.click_board[row][column])
         else:
             self.display_surface.blit(self.token_image_player_2, self.click_board[row][column])
-        self.fps_clock.tick(FPS)
+        self.fps_clock.tick(self.fps)
+        pygame.display.update()
+    
+    def draw_turn(self, player_turn: int):
+        """
+        Display current player's turn
+        """
+        pygame.draw.rect(self.display_surface, WHITE, (0, 535, self.player_1_turn_text.get_width(), self.player_1_turn_text.get_height()))
+        if player_turn == 0:
+            self.display_surface.blit(self.player_1_turn_text, (0, 535))
+        else:
+            self.display_surface.blit(self.player_2_turn_text, (0, 535))
         pygame.display.update()
 
     def animate_win_path(self, path: list[tuple[int, int]], player_token: int):
+        """
+        Display flash animation for winning path of player's tokens
+        """
         winner_token_image = self.token_image_player_1 if player_token == PLAYER_1_TOKEN else self.token_image_player_2
+        pygame.draw.rect(self.display_surface, WHITE, (0, 535, self.player_1_turn_text.get_width(), self.player_1_turn_text.get_height()))
+        if player_token == PLAYER_1_TOKEN:
+            self.display_surface.blit(self.player_1_wins_text, (0, 535))
+        else:
+            self.display_surface.blit(self.player_2_wins_text, (0, 535))
         for _ in range(4):  # blink 4 times
             for (row, column) in path:
                 self.display_surface.blit(self.token_image, self.click_board[row][column])
-            self.fps_clock.tick(FPS)
+            self.fps_clock.tick(self.fps)
             pygame.display.update()
 
             for (row, column) in path:
                 self.display_surface.blit(winner_token_image, self.click_board[row][column])
-            self.fps_clock.tick(FPS)
+            self.fps_clock.tick(self.fps)
             pygame.display.update()
 
-    def draw_board(self, board: list[list[int, int]]):
+    def draw_board(self, board: numpy.ndarray):
+        """
+        Draw board with tokens
+        """
         self.draw_grid()
         for i in range(self.board_size):
             for j in range(self.board_size):
-                if board[i][j] == PLAYER_1_TOKEN:
+                if board[i, j] == PLAYER_1_TOKEN:
                     self.display_surface.blit(self.token_image_player_1, self.click_board[i][j])
-                elif board[i][j] == PLAYER_2_TOKEN:
+                elif board[i, j] == PLAYER_2_TOKEN:
                     self.display_surface.blit(self.token_image_player_2, self.click_board[i][j])
         pygame.display.update()
 
-    def draw_paused_game(self):
+    def draw_paused_game(self, player_1_human_flag: bool, player_2_human_flag: bool):
+        """
+        Draw settings menu
+        """
         self.display_surface.blit(self.pause_screen, (0, 0))
+        if player_1_human_flag is True:
+            self.display_surface.blit(self.selection_arrow, (240, 214))
+        else:
+            self.display_surface.blit(self.selection_arrow, (240, 312))
+        if player_2_human_flag is True:
+            self.display_surface.blit(self.selection_arrow_2, (518, 214))
+        else:
+            self.display_surface.blit(self.selection_arrow_2, (518, 312))
         pygame.display.update()
-    
+
+    def animate_reset_text(self):
+        """
+        Display hover animation for reset text
+        """
+        hover_x, hover_y = pygame.mouse.get_pos()
+        pygame.draw.rect(self.display_surface, WHITE, (0, 0, self.reset_text.get_width(), self.reset_text.get_height()))
+        if self.reset_text_box.collidepoint(hover_x, hover_y) is True:
+            self.display_surface.blit(self.hover_reset_text, (0, 0))
+        else:
+            self.display_surface.blit(self.reset_text, (0, 0))
+        pygame.display.update()
+
+    def animate_settings_text(self):
+        """
+        Display hover animation for settings text
+        """
+        hover_x, hover_y = pygame.mouse.get_pos()
+        pygame.draw.rect(self.display_surface, WHITE, (self.window_width - self.settings_text.get_width(), 0, self.settings_text.get_width(), self.settings_text.get_height()))
+        if self.settings_text_box.collidepoint(hover_x, hover_y) is True:
+            self.display_surface.blit(self.hover_settings_text, (self.window_width - self.settings_text.get_width(), 0))
+        else:
+            self.display_surface.blit(self.settings_text, (self.window_width - self.settings_text.get_width(), 0))
+        pygame.display.update()
