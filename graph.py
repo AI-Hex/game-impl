@@ -7,12 +7,10 @@ PLAYER_2_TOKEN = 2
 
 class HexNode(object):
 
-    def __init__(self, position: tuple[int, int], node_value: int, special_node: str | None = None, status: int = UNOCCUPIED):
+    def __init__(self, position: tuple[int, int], node_value: int | None, status: int = UNOCCUPIED):
         self.position: tuple[int, int] = position
         self.status: int = status
         self.node_value: int = node_value
-        # If it is a special node, it will have one of the following values: L, R, U, D. Otherwise it is None.
-        self.special_node = special_node
         # Used in the two distance evaluation function
         self.td_value: int | None = None
         self.td_neighbour_values_list: list[int] = list()
@@ -20,6 +18,21 @@ class HexNode(object):
     def __copy__(self):
         new_node = HexNode(self.position, self.node_value, self.status)
         return new_node
+
+    def is_special_node(self):
+        return False
+
+
+class SpecialHexNode(HexNode):
+
+    def __init__(self, position: tuple[int, int], node_value: int | None, status: int = UNOCCUPIED,
+                 special_node_identifier: str = 'L'):
+        super(SpecialHexNode, self).__init__(position, node_value, status)
+        # If it is a special node, special_node_identifier will have one of the following values: L, R, U, D.
+        self.special_node_identifier: str = special_node_identifier
+
+    def is_special_node(self):
+        return True
 
 
 class HexGraph(object):
@@ -38,7 +51,6 @@ class HexGraph(object):
     def __copy__(self):
         return HexGraph(self.board_size, copy.deepcopy(self.hex_nodes), copy.deepcopy(self.edges_matrix))
 
-
     def update_edge_value(self, node_value_1, node_value_2, new_distance_for_1, new_distance_for_2):
         self.edges_matrix[node_value_1][node_value_2] = new_distance_for_1
         self.edges_matrix[node_value_2][node_value_1] = new_distance_for_2
@@ -48,3 +60,8 @@ class HexGraph(object):
 
     def get_first_row_tiles(self, player_token: int) -> list[HexNode]:
         return [node for node in self.hex_nodes if node.node_value < self.board_size and (node.status == player_token or node.status == UNOCCUPIED)]
+
+    def reset_td_values(self):
+        for node in self.hex_nodes:
+            node.td_value = None
+            node.td_neighbour_values_list = list()
