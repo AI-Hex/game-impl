@@ -126,13 +126,10 @@ class Game(object):
         Handle AI's turn to make a move on the board
         """
         tile_pos = self.players[self.player_turn].get_move()
-        assert tile_pos != None
-        if tile_pos is not None and not self.game_board.is_tile_occupied(tile_pos):
-            self.game_board.make_move(tile_pos, self.players[self.player_turn].token)
-            self.game_graphics.draw_move(tile_pos, self.players[self.player_turn].token)
+        assert tile_pos != None and self.game_board.is_tile_occupied(tile_pos) == False
+        self.game_board.make_move(tile_pos, self.players[self.player_turn].token)
+        self.game_graphics.draw_move(tile_pos, self.players[self.player_turn].token)
         self.__check_for_win(self.player_turn)
-        print(self.player_2.start_dijkstra(PLAYER_2_TOKEN))
-
 
     def __handle_move(self, tile_pos: tuple[int, int]):
         """
