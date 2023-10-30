@@ -1,20 +1,12 @@
-import pygame, numpy
+import numpy
 from graph import *
 
-# State of tile pieces in board
-UNOCCUPIED = 0
-PLAYER_1_TOKEN = 1
-PLAYER_2_TOKEN = 2
 
 adjacent_neighbors_dict = dict()
-special_adjacent_neighbours_dict: dict[str, list[tuple[int, int]]] = dict()
+# special_adjacent_neighbours_dict: dict[str, list[tuple[int, int]]] = dict()
 adjacent_neighbor_nodes_dict: dict[int, list[HexNode]] = dict()
 transposition_table = dict()
 
-LEFT = 0
-UP = 1
-RIGHT = 2
-DOWN = 3
 
 def store(state: str, depth: int, eval: float, move: tuple[int, int]):
     if state not in transposition_table:
@@ -44,7 +36,7 @@ class Board(object):
     board_size: int
     num_nodes: int
     graph: HexGraph
-    hex_nodes_by_position: dict[tuple[int, int] | str, HexNode]
+    hex_nodes_by_position: dict[tuple[int, int], HexNode]
     special_hex_nodes: dict[str, HexNode]
 
     def __init__(self, board_size: int):
@@ -54,9 +46,7 @@ class Board(object):
         Board.board_size = board_size
         num_nodes = board_size * board_size
         Board.num_nodes = num_nodes
-        #Board.board = numpy.array([[UNOCCUPIED for _ in range(board_size)] for _ in range(board_size)])
         Board.create_initial_nodes_and_board()
-        print(Board.graph.edges_matrix)
         for i in range(board_size):
             for j in range(board_size):
                 adjacent_neighbors_dict[(i, j)] = self.get_neighboring_tiles((i, j))
@@ -77,11 +67,6 @@ class Board(object):
                 adjacent_neighbor_nodes_dict[num_nodes + LEFT].append(node)
             elif node.node_value % board_size == board_size - 1:
                 adjacent_neighbor_nodes_dict[num_nodes + RIGHT].append(node)
-        for key in adjacent_neighbor_nodes_dict.keys():
-            print("Key ", key)
-            list_nodes = adjacent_neighbor_nodes_dict[key]
-            for node in list_nodes:
-                print(node.node_value)
 
     @staticmethod
     def create_initial_nodes_and_board():
@@ -135,21 +120,21 @@ class Board(object):
                         Board.graph.update_edge_value(node_value, node_value - Board.board_size + 1, 1, 1)
                     if 0 <= node_value + 1 <= physical_nodes_num - 1:
                         Board.graph.update_edge_value(node_value, node_value + 1, 1, 1)
-                else: # last column
+                else:  # last column
                     Board.graph.update_edge_value(node_value, physical_nodes_num + RIGHT, 0, 1)
                 if module_value != 0: # not first column
                     if 0 <= node_value + Board.board_size - 1 <= physical_nodes_num - 1:
                         Board.graph.update_edge_value(node_value, node_value + Board.board_size - 1, 1, 1)
                     if 0 <= node_value - 1 <= physical_nodes_num - 1:
                         Board.graph.update_edge_value(node_value, node_value - 1, 1, 1)
-                else: # first column
+                else:  # first column
                     Board.graph.update_edge_value(node_value, physical_nodes_num + LEFT, 0, 1)
                 if 0 <= node_value < Board.board_size: #first row
                     Board.graph.update_edge_value(node_value, physical_nodes_num + UP, 0, 1)
                 if physical_nodes_num - Board.board_size <= node_value < physical_nodes_num: #last row
                     Board.graph.update_edge_value(node_value, physical_nodes_num + DOWN, 0, 1)
-            print(node_value)
-            print(Board.graph.edges_matrix[node_value])
+            # print(node_value)
+            # print(Board.graph.edges_matrix[node_value])
 
     def to_string(self):
         return self.board.tostring()
@@ -246,6 +231,82 @@ class Board(object):
         Get all unoccupied tiles
         """
         return [(i, j) for j in range(Board.board_size) for i in range(Board.board_size) if Board.board[i, j] == UNOCCUPIED]
+
+    @staticmethod
+    def get_occupied_tiles(player_token: int) -> list[tuple[int, int]]:
+        """
+        Get all occupied tiles by player with player_token
+        """
+        return [(i, j) for j in range(Board.board_size) for i in range(Board.board_size) if Board.board[i, j] == player_token]
+    
+    @staticmethod
+    def get_bridge_reward(player_token: int) -> float:
+        reward: float = 0
+        player_tiles = Board.get_occupied_tiles(player_token)
+        for tile in player_tiles:
+            i, j = tile
+            # top bridge
+            if Board.tile_in_board((i - 1, j)) and Board.tile_in_board((i - 1, j + 1)):
+                if Board.board[i - 1, j] == UNOCCUPIED and Board.board[i - 1, j + 1] == UNOCCUPIED:
+                    reward += 0.25
+                    if Board.tile_in_board((i - 2, j + 1)):
+                        if Board.board[i - 2, j + 1] == player_token:
+                            reward += 0.25
+                    elif player_token == PLAYER_2_TOKEN:
+                        reward += 0.75
+            # top right bridge
+            if Board.tile_in_board((i - 1, j + 1)) and Board.tile_in_board((i, j + 1)):
+                if Board.board[i - 1, j + 1] == UNOCCUPIED and Board.board[i, j + 1] == UNOCCUPIED:
+                    reward += 0.25
+                    if Board.tile_in_board((i - 1, j + 2)):
+                        if Board.board[i - 1, j + 2] == player_token:
+                            reward += 0.25
+                    elif player_token == PLAYER_1_TOKEN:
+                        reward += 0.75
+            # top left bridge
+            if Board.tile_in_board((i - 1, j)) and Board.tile_in_board((i, j - 1)):
+                if Board.board[i - 1, j] == UNOCCUPIED and Board.board[i, j - 1] == UNOCCUPIED:
+                    reward += 0.25
+                    if Board.tile_in_board((i - 1, j - 1)):
+                        if Board.board[i - 1, j - 1] == player_token:
+                            reward += 0.25
+                    else:
+                        reward += 0.25
+            # bottom bridge
+            if Board.tile_in_board((i + 1, j)) and Board.tile_in_board((i + 1, j - 1)):
+                if Board.board[i + 1, j] == UNOCCUPIED and Board.board[i + 1, j - 1] == UNOCCUPIED:
+                    reward += 0.25
+                    if Board.tile_in_board((i + 2, j - 1)):
+                        if Board.board[i + 2, j - 1] == player_token:
+                            reward += 0.25
+                    elif player_token == PLAYER_2_TOKEN:
+                        reward += 0.75
+            # bottom right bridge
+            if Board.tile_in_board((i + 1, j)) and Board.tile_in_board((i, j + 1)):
+                if Board.board[i + 1, j] == UNOCCUPIED and Board.board[i, j + 1] == UNOCCUPIED:
+                    reward += 0.25
+                    if Board.tile_in_board((i + 1, j + 1)):
+                        if Board.board[i + 1, j + 1] == player_token:
+                            reward += 0.25
+                    else:
+                        reward += 0.25
+            # bottom left bridge
+            if Board.tile_in_board((i + 1, j - 1)) and Board.tile_in_board((i, j - 1)):
+                if Board.board[i + 1, j - 1] == UNOCCUPIED and Board.board[i, j - 1] == UNOCCUPIED:
+                    reward += 0.25
+                    if Board.tile_in_board((i + 1, j - 2)):
+                        if Board.board[i + 1, j - 2] == player_token:
+                            reward += 0.25
+                    elif player_token == PLAYER_1_TOKEN:
+                        reward += 0.75
+        return reward / len(player_tiles)
+
+    @staticmethod
+    def tile_in_board(tile_pos: tuple[int, int]) -> bool:
+        i, j = tile_pos
+        if 0 <= i < Board.board_size and 0 <= j < Board.board_size:
+            return True
+        return False
 
     @staticmethod
     def get_neighboring_tiles(tile_pos: tuple[int, int]) -> list[tuple[int, int]]:
@@ -457,4 +518,4 @@ class Board(object):
             for j in range(Board.board_size):
                 result = result + str(Board.board[i, j])
         return result
-        
+            
