@@ -73,20 +73,20 @@ class AI_Minmax_Player(AI_Player):
 
     def __init__(self, token: int):
         super().__init__(token)
-        self.max_depth = 5
+        self.max_depth = 3
         assert self.max_depth > 0
     
     def get_move(self) -> tuple[int, int]:
         """
         Get best move using minmax algorithm with alpha beta pruning
         """
-        start_time = time.time()
-        _, best_moves = self.alpha_beta_pruned_minmax(player_token=self.token,
+        # start_time = time.time()
+        _, best_move = self.alpha_beta_pruned_minmax(player_token=self.token,
                                                        is_maximizing_player=True, current_depth=0)
-        end_time = time.time()
-        print(_)
-        print(end_time - start_time)
-        return best_moves[random.randint(0, len(best_moves) - 1)]
+        # end_time = time.time()
+        # print(_)
+        # print(end_time - start_time)
+        return best_move
 
     def alpha_beta_pruned_minmax(self, player_token: int, is_maximizing_player: bool, current_depth: int,
                                    alpha: float = float('-inf'), beta: float = float('inf')) -> tuple[float, tuple[int, int]]:
@@ -96,18 +96,26 @@ class AI_Minmax_Player(AI_Player):
         Return the best state's score and the best tile position
         """
         pygame.event.clear()  # Trick computer into thinking events are being handled
-        result_list: list[tuple[int, int]] = list()
+        # result_list: list[tuple[int, int]] = list()
 
-        state_str = Board.get_board_string()
-        if state_str in transposition_table:  
-            if current_depth in transposition_table[state_str]:  # State has already been evaluated at that depth
-                return load(state_str, current_depth)
+        # state_str = Board.get_board_string()
+        # if state_str in transposition_table:  
+        #     if current_depth in transposition_table[state_str]:  # State has already been evaluated at that depth
+        #         return load(state_str, current_depth)
         
         # Sort successor moves by how close to the center of the board they are (center moves tend to do better at the start)
-        successor_moves = sorted(
-            [(i, j) for j in range(Board.board_size) for i in range(Board.board_size) if Board.board[i, j] == UNOCCUPIED], 
-            key=lambda x: abs(x[0] - (Board.board_size - 1)/2) + abs(x[1] - (Board.board_size - 1)/2)
-        )
+        # successor_moves = sorted(
+        #     [(i, j) for j in range(Board.board_size) for i in range(Board.board_size) if Board.board[i, j] == UNOCCUPIED], 
+        #     key=lambda x: abs(x[0] - (Board.board_size - 1)/2) + abs(x[1] - (Board.board_size - 1)/2)
+        # )
+
+        # successor_moves = sorted(
+        #     [(i, j) for j in range(Board.board_size) for i in range(Board.board_size) if Board.board[i, j] == UNOCCUPIED], 
+        #     key=lambda x: abs(x[0] + x[1] - 5)
+        # )
+
+        successor_moves = [(i, j) for j in range(Board.board_size) for i in range(Board.board_size) if Board.board[i, j] == UNOCCUPIED]
+        random.shuffle(successor_moves)
 
         # If the player can win in one move, choose that move
         if current_depth == 1:
@@ -135,23 +143,16 @@ class AI_Minmax_Player(AI_Player):
                 Board.board[s_i, s_j] = UNOCCUPIED
                 if best_value == result_value == float('-inf'):
                     result_move = successor_move
-                    result_list = [successor_move]
-                if best_value == result_value:
-                    if best_value != float('-inf'):
-                        result_list.append(successor_move)
-                    else:
-                        result_list = [successor_move]
                 if best_value > result_value:
                     result_value = best_value
                     result_move = successor_move
-                    result_list = [successor_move]
 
                 alpha = max(alpha, best_value)
                 
                 if beta <= alpha:
                     break
-            store(state_str, current_depth, result_value, result_list)
-            return result_value, result_list
+            # store(state_str, current_depth, result_value, result_list)
+            return result_value, result_move
         else:
             result_value, result_move = float('inf'), (None, None)
             for successor_move in successor_moves:
@@ -162,23 +163,15 @@ class AI_Minmax_Player(AI_Player):
                 Board.board[s_i, s_j] = UNOCCUPIED
                 if best_value == result_value == float('inf'):
                     result_move = successor_move
-                    result_list = [successor_move]
-                if best_value == result_value:
-                    if best_value != float('inf'):
-                        result_list.append(successor_move)
-                    else:
-                        result_list = [successor_move]
                 if best_value < result_value:
                     result_value = best_value
                     result_move = successor_move
-                    result_list = [successor_move]
-
                 beta = min(beta, best_value)
 
                 if beta <= alpha:
                     break
-            store(state_str, current_depth, result_value, result_list)
-            return result_value, result_list
+            # store(state_str, current_depth, result_value, result_list)
+            return result_value, result_move
 
     def evaluate_score(self, player_token: int, num_turns: int):
         """
