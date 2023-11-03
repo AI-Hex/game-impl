@@ -78,7 +78,7 @@ class Game(object):
                 print('p2 wins')
                 continue
             self.player_turn = 1 - self.player_turn
-        return ("player 1 wins: ", num_wins_player_1, "player 2 wins: ", num_wins_player_2, 'time per turn', [time / num_iters for time in avg_time_players], 'avg num of tiles per game: p1 v p2 = ', sum_tiles_player_1 / num_iters, sum_tiles_player_2 / num_iters)
+        return ("player 1 wins: ", num_wins_player_1, "player 2 wins: ", num_wins_player_2, 'time per game', [time / num_iters for time in avg_time_players], 'avg num of tiles per game: p1 v p2 = ', sum_tiles_player_1 / num_iters, sum_tiles_player_2 / num_iters)
         
     def __check_for_quit(self, event: pygame.event.Event) -> bool:
         """

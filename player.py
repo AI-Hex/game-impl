@@ -102,20 +102,25 @@ class AI_Minmax_Player(AI_Player):
         # if state_str in transposition_table:  
         #     if current_depth in transposition_table[state_str]:  # State has already been evaluated at that depth
         #         return load(state_str, current_depth)
+ 
+        # 1. AT RANDOM
+        successor_moves = [(i, j) for j in range(Board.board_size) for i in range(Board.board_size) if Board.board[i, j] == UNOCCUPIED]
+        random.shuffle(successor_moves)       
         
+        # 2. BY CENTRALITY
         # Sort successor moves by how close to the center of the board they are (center moves tend to do better at the start)
         # successor_moves = sorted(
         #     [(i, j) for j in range(Board.board_size) for i in range(Board.board_size) if Board.board[i, j] == UNOCCUPIED], 
-        #     key=lambda x: abs(x[0] - (Board.board_size - 1)/2) + abs(x[1] - (Board.board_size - 1)/2)
+        #     key=lambda x: abs(x[0] - (Board.board_size - 1)/2) + abs(x[1] - (Board.board_size - 1)/2) + random.random() / 4 
         # )
 
+        # 3. BY DIAGONALITY
         # successor_moves = sorted(
         #     [(i, j) for j in range(Board.board_size) for i in range(Board.board_size) if Board.board[i, j] == UNOCCUPIED], 
-        #     key=lambda x: abs(x[0] + x[1] - 5)
+        #     key=lambda x: abs(x[0] + x[1] - (Board.board_size - 1) + random.random() / 4)
         # )
 
-        successor_moves = [(i, j) for j in range(Board.board_size) for i in range(Board.board_size) if Board.board[i, j] == UNOCCUPIED]
-        random.shuffle(successor_moves)
+
 
         # If the player can win in one move, choose that move
         if current_depth == 1:
@@ -259,6 +264,101 @@ class AI_Minmax_Player(AI_Player):
         opponent_token = 1 if player_token == 2 else 2
 
         return [(n_i, n_j) for (n_i, n_j) in adjacent_neighbors_dict[current_node] if Board.board[n_i, n_j] != opponent_token]
+
+class AI_Minmax_Player_Dos(AI_Minmax_Player):
+
+    def __init__(self, token: int):
+        super().__init__(token)
+
+    def alpha_beta_pruned_minmax(self, player_token: int, is_maximizing_player: bool, current_depth: int,
+                                   alpha: float = float('-inf'), beta: float = float('inf')) -> tuple[float, tuple[int, int]]:
+        """
+        Find next best state using minmax algorithm with alpha beta pruning
+
+        Return the best state's score and the best tile position
+        """
+        pygame.event.clear()  # Trick computer into thinking events are being handled
+        # result_list: list[tuple[int, int]] = list()
+
+        # state_str = Board.get_board_string()
+        # if state_str in transposition_table:  
+        #     if current_depth in transposition_table[state_str]:  # State has already been evaluated at that depth
+        #         return load(state_str, current_depth)
+ 
+        # 1. AT RANDOM
+        # successor_moves = [(i, j) for j in range(Board.board_size) for i in range(Board.board_size) if Board.board[i, j] == UNOCCUPIED]
+        # random.shuffle(successor_moves)       
+        
+        # 2. BY CENTRALITY
+        # Sort successor moves by how close to the center of the board they are (center moves tend to do better at the start)
+        # successor_moves = sorted(
+        #     [(i, j) for j in range(Board.board_size) for i in range(Board.board_size) if Board.board[i, j] == UNOCCUPIED], 
+        #     key=lambda x: abs(x[0] - (Board.board_size - 1)/2) + abs(x[1] - (Board.board_size - 1)/2) + random.random() / 4
+        # )
+
+        # 3. BY DIAGONALITY
+        successor_moves = sorted(
+            [(i, j) for j in range(Board.board_size) for i in range(Board.board_size) if Board.board[i, j] == UNOCCUPIED], 
+            key=lambda x: abs(x[0] + x[1] - (Board.board_size - 1)) + random.random() / 4
+        )
+
+
+
+        # If the player can win in one move, choose that move
+        if current_depth == 1:
+            result = self.evaluate_score(self.token, current_depth)
+            if result == 9999:  # 10000 - num_turns == victory 
+                return float('inf'), (None, None)
+
+        # If it is a leaf node, evaluate it
+        if current_depth == self.max_depth or len(successor_moves) == 0:
+            evaluation = self.evaluate_score(self.token, current_depth)
+            if evaluation <= 1:
+                return evaluation, (None, None)
+            return 2 * evaluation + Board.get_bridge_reward(self.token) - Board.get_bridge_reward(1 if self.token == 2 else 2), (None, None)
+        
+        opponent_token = 1 if player_token == 2 else 2
+
+        # Main alpha beta algorithm
+        if is_maximizing_player is True:
+            result_value, result_move = float('-inf'), (None, None)
+            for successor_move in successor_moves:
+                s_i, s_j = successor_move
+                Board.board[s_i, s_j] = player_token
+                best_value, _ = self.alpha_beta_pruned_minmax(player_token=opponent_token, is_maximizing_player=False, 
+                                                              current_depth=current_depth + 1, alpha=alpha, beta=beta)
+                Board.board[s_i, s_j] = UNOCCUPIED
+                if best_value == result_value == float('-inf'):
+                    result_move = successor_move
+                if best_value > result_value:
+                    result_value = best_value
+                    result_move = successor_move
+
+                alpha = max(alpha, best_value)
+                
+                if beta <= alpha:
+                    break
+            # store(state_str, current_depth, result_value, result_list)
+            return result_value, result_move
+        else:
+            result_value, result_move = float('inf'), (None, None)
+            for successor_move in successor_moves:
+                s_i, s_j = successor_move
+                Board.board[s_i, s_j] = player_token
+                best_value, _ = self.alpha_beta_pruned_minmax(player_token=opponent_token, is_maximizing_player=True, 
+                                                              current_depth=current_depth + 1, alpha=alpha, beta=beta)
+                Board.board[s_i, s_j] = UNOCCUPIED
+                if best_value == result_value == float('inf'):
+                    result_move = successor_move
+                if best_value < result_value:
+                    result_value = best_value
+                    result_move = successor_move
+                beta = min(beta, best_value)
+
+                if beta <= alpha:
+                    break
+            # store(state_str, current_depth, result_value, result_list)
+            return result_value, result_move
 
 
 class AI_Minmax_Graph_Player(AI_Player):
