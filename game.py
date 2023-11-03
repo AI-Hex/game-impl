@@ -42,6 +42,43 @@ class Game(object):
 
             # Advance turn to the next player
             self.player_turn = 1 - self.player_turn
+    
+    def start_simulation(self, num_iters: int):
+        # Game loop
+        num_wins_player_1 = 0
+        num_wins_player_2 = 0
+        sum_tiles_player_1 = 0
+        sum_tiles_player_2 = 0
+        avg_time_players = list([0, 0])
+        curr_iter = 1
+        while curr_iter <= num_iters:
+            self.game_graphics.draw_board(Board.board)
+            begin_time = time.time()
+            tile_pos = self.players[self.player_turn].get_move()
+            end_time = time.time()
+            print('player', self.player_turn + 1, tile_pos)
+            avg_time_players[self.player_turn] += end_time - begin_time
+            self.game_board.make_move(tile_pos, self.players[self.player_turn].token)
+            if Board.get_win_token() == 1:
+                num_wins_player_1 += 1
+                sum_tiles_player_1 += len(Board.get_occupied_tiles(1))
+                sum_tiles_player_2 += len(Board.get_occupied_tiles(2))
+                self.__reset_game()
+                curr_iter += 1
+                self.player_turn = 0
+                print('p1 wins')
+                continue
+            elif Board.get_win_token() == 2:
+                num_wins_player_2 += 1
+                sum_tiles_player_1 += len(Board.get_occupied_tiles(1))
+                sum_tiles_player_2 += len(Board.get_occupied_tiles(2))
+                self.__reset_game()
+                curr_iter += 1
+                self.player_turn = 0
+                print('p2 wins')
+                continue
+            self.player_turn = 1 - self.player_turn
+        return ("player 1 wins: ", num_wins_player_1, "player 2 wins: ", num_wins_player_2, 'time per game', [time / num_iters for time in avg_time_players], 'avg num of tiles per game: p1 v p2 = ', sum_tiles_player_1 / num_iters, sum_tiles_player_2 / num_iters)
         
     def __check_for_quit(self, event: pygame.event.Event) -> bool:
         """
