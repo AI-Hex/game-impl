@@ -16,6 +16,9 @@ class Player(object):
     def __init__(self, token: int):
         self.token = token
 
+    def get_transposition_table(self):
+        pass
+
     def is_human(self) -> bool:
         raise NotImplementedError('Method should be overriden')
     
@@ -368,9 +371,15 @@ class AI_Minmax_Graph_Player(AI_Player):
 
     def __init__(self, token: int):
         self.max_depth = 3
-        self.transposition_table = Board.two_distance_transposition_table_blue if token == 1 \
-            else Board.two_distance_transposition_table_orange
+        if token == PLAYER_1_TOKEN:
+            self.bonus_param = -1
+        else:
+            self.bonus_param = -2
         super().__init__(token)
+
+    def get_transposition_table(self):
+        self.transposition_table = Board.two_distance_transposition_table_blue if self.token == 1 \
+            else Board.two_distance_transposition_table_orange
 
     def start_dijkstra(self, player: int) -> int:
         source_nodes: list[HexNode]
@@ -601,7 +610,7 @@ class AI_Minmax_Graph_Player(AI_Player):
         # If maximum depth is reached or the board is full, end the recursion
         if depth == max_depth or len(successors) == 0:
             evaluation = self.evaluate_score_two_distance(self.token, depth)
-            if evaluation <= 1:
+            if evaluation <= self.bonus_param:
                 self.transposition_table.store(hash_code, evaluation)
                 return evaluation
             evaluation_with_bonuses = evaluation + Board.get_bridge_reward(self.token) - Board.get_bridge_reward(1 if self.token == 2 else 2)

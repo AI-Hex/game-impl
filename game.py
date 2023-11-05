@@ -24,7 +24,9 @@ class Game(object):
         Game.game_board = Board(board_size, already_existing_table)
         self.game_graphics = Graphics(board_size)
         self.player_1 = player_1
+        self.player_1.get_transposition_table()
         self.player_2 = player_2
+        self.player_2.get_transposition_table()
         self.players = [player_1, player_2]
         self.player_turn = 0
 
@@ -123,7 +125,6 @@ class Game(object):
         """
         if self.game_board.check_victory() is True:
             self.game_graphics.animate_win_path(self.game_board.get_win_path(), player_turn + 1)
-            #print(move_list)
             while True:
                 for event in pygame.event.get():
                     if self.__check_for_quit(event) is True:
@@ -255,12 +256,7 @@ class Game(object):
         """
         Exit the game
         """
-        print("The blue board hash")
-        print(Board.two_distance_transposition_table_blue.transposition_table)
         Board.two_distance_transposition_table_blue.save_transposition_table()
-        print("The orange board hash")
-        print(Board.two_distance_transposition_table_orange.transposition_table)
-        print(Board.two_distance_transposition_table_blue.transposition_table)
         Board.two_distance_transposition_table_orange.save_transposition_table()
         Board.dijkstra_transposition_table.save_transposition_table()
         pygame.quit()

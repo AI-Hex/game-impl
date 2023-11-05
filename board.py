@@ -38,10 +38,8 @@ class Board(object):
     graph: HexGraph
     hex_nodes_by_position: dict[tuple[int, int], HexNode]
     special_hex_nodes: dict[str, HexNode]
-    two_distance_transposition_table_blue: Transposition_Table = Transposition_Table(already_existing_table=True,
-                                                               is_two_distance=True, is_blue=True, board_size=7)
-    two_distance_transposition_table_orange: Transposition_Table = Transposition_Table(already_existing_table=True,
-                                                               is_two_distance=True, is_blue=False, board_size=7)
+    two_distance_transposition_table_blue: Transposition_Table
+    two_distance_transposition_table_orange: Transposition_Table
     dijkstra_transposition_table: Transposition_Table
 
     def __init__(self, board_size: int, already_existing_table: bool):
