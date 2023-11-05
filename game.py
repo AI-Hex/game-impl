@@ -3,6 +3,7 @@ from pygame.locals import *
 from board import *
 from player import *
 from graphics import *
+from transpositionTable_hashing import *
 
 
 class Game(object):
@@ -16,11 +17,11 @@ class Game(object):
     player_2: Player
     players: list[Player]
 
-    def __init__(self, board_size: int, player_1: Player, player_2: Player):
+    def __init__(self, board_size: int, already_existing_table: bool, player_1: Player, player_2: Player):
         """
         Initialize necessary objects for a hex game
         """
-        Game.game_board = Board(board_size)
+        Game.game_board = Board(board_size, already_existing_table)
         self.game_graphics = Graphics(board_size)
         self.player_1 = player_1
         self.player_2 = player_2
@@ -45,6 +46,7 @@ class Game(object):
     
     def start_simulation(self, num_iters: int):
         # Game loop
+        simulation_start_time = time.time()
         num_wins_player_1 = 0
         num_wins_player_2 = 0
         sum_tiles_player_1 = 0
@@ -52,14 +54,17 @@ class Game(object):
         avg_time_players = list([0, 0])
         curr_iter = 1
         while curr_iter <= num_iters:
+            if curr_iter in [30, 60, 90]:
+                print(f'{curr_iter} percent of simulation done!')
             self.game_graphics.draw_board(Board.board)
             begin_time = time.time()
             tile_pos = self.players[self.player_turn].get_move()
             end_time = time.time()
-            print('player', self.player_turn + 1, tile_pos)
+            #print('player', self.player_turn + 1, tile_pos)
             avg_time_players[self.player_turn] += end_time - begin_time
             self.game_board.make_move(tile_pos, self.players[self.player_turn].token)
-            if Board.get_win_token() == 1:
+            winning_player = Board.get_win_token()
+            if winning_player == 1:
                 num_wins_player_1 += 1
                 sum_tiles_player_1 += len(Board.get_occupied_tiles(1))
                 sum_tiles_player_2 += len(Board.get_occupied_tiles(2))
@@ -68,7 +73,7 @@ class Game(object):
                 self.player_turn = 0
                 print('p1 wins')
                 continue
-            elif Board.get_win_token() == 2:
+            elif winning_player == 2:
                 num_wins_player_2 += 1
                 sum_tiles_player_1 += len(Board.get_occupied_tiles(1))
                 sum_tiles_player_2 += len(Board.get_occupied_tiles(2))
@@ -78,6 +83,13 @@ class Game(object):
                 print('p2 wins')
                 continue
             self.player_turn = 1 - self.player_turn
+        simulation_end_time = time.time()
+        print(f'Simulation lasted {simulation_end_time - simulation_start_time}')
+        Board.two_distance_transposition_table_blue.save_transposition_table()
+        Board.two_distance_transposition_table_orange.save_transposition_table()
+        Board.dijkstra_transposition_table.save_transposition_table()
+        write_time = time.time()
+        print(f'Writing in file lasted {write_time - end_time}')
         return ("player 1 wins: ", num_wins_player_1, "player 2 wins: ", num_wins_player_2, 'time per game', [time / num_iters for time in avg_time_players], 'avg num of tiles per game: p1 v p2 = ', sum_tiles_player_1 / num_iters, sum_tiles_player_2 / num_iters)
         
     def __check_for_quit(self, event: pygame.event.Event) -> bool:
@@ -243,6 +255,14 @@ class Game(object):
         """
         Exit the game
         """
+        print("The blue board hash")
+        print(Board.two_distance_transposition_table_blue.transposition_table)
+        Board.two_distance_transposition_table_blue.save_transposition_table()
+        print("The orange board hash")
+        print(Board.two_distance_transposition_table_orange.transposition_table)
+        print(Board.two_distance_transposition_table_blue.transposition_table)
+        Board.two_distance_transposition_table_orange.save_transposition_table()
+        Board.dijkstra_transposition_table.save_transposition_table()
         pygame.quit()
         sys.exit()
 

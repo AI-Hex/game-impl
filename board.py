@@ -1,12 +1,12 @@
 import numpy
 from graph import *
+from transpositionTable_hashing import *
 
 
 adjacent_neighbors_dict = dict()
 # special_adjacent_neighbours_dict: dict[str, list[tuple[int, int]]] = dict()
 adjacent_neighbor_nodes_dict: dict[int, list[HexNode]] = dict()
 transposition_table = dict()
-
 
 def store(state: str, depth: int, eval: float, move: tuple[int, int]):
     if state not in transposition_table:
@@ -38,8 +38,13 @@ class Board(object):
     graph: HexGraph
     hex_nodes_by_position: dict[tuple[int, int], HexNode]
     special_hex_nodes: dict[str, HexNode]
+    two_distance_transposition_table_blue: Transposition_Table = Transposition_Table(already_existing_table=True,
+                                                               is_two_distance=True, is_blue=True, board_size=7)
+    two_distance_transposition_table_orange: Transposition_Table = Transposition_Table(already_existing_table=True,
+                                                               is_two_distance=True, is_blue=False, board_size=7)
+    dijkstra_transposition_table: Transposition_Table
 
-    def __init__(self, board_size: int):
+    def __init__(self, board_size: int, already_existing_table: bool):
         """
         Initialize an empty hex board
         """
@@ -47,6 +52,13 @@ class Board(object):
         num_nodes = board_size * board_size
         Board.num_nodes = num_nodes
         Board.create_initial_nodes_and_board()
+        Board.two_distance_transposition_table_blue = Transposition_Table(already_existing_table=already_existing_table,
+                                                               is_two_distance=True, is_blue=True, board_size=board_size)
+        Board.two_distance_transposition_table_orange = Transposition_Table(already_existing_table=already_existing_table,
+                                                                          is_two_distance=True, is_blue=False,
+                                                                          board_size=board_size)
+        Board.dijkstra_transposition_table = Transposition_Table(already_existing_table=already_existing_table, is_blue=True,
+                                                               is_two_distance=False, board_size=board_size)
         for i in range(board_size):
             for j in range(board_size):
                 adjacent_neighbors_dict[(i, j)] = self.get_neighboring_tiles((i, j))
@@ -518,4 +530,3 @@ class Board(object):
             for j in range(Board.board_size):
                 result = result + str(Board.board[i, j])
         return result
-            

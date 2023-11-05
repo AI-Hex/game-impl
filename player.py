@@ -1,6 +1,9 @@
 import pygame, sys, random, copy, numpy, time
+
+import board
 from board import *
 from graph import *
+from transpositionTable_hashing import *
 
 
 class Player(object):
@@ -70,7 +73,6 @@ class AI_Random_Player(AI_Player):
 
 
 class AI_Minmax_Player(AI_Player):
-
     def __init__(self, token: int):
         super().__init__(token)
         self.max_depth = 3
@@ -362,6 +364,13 @@ class AI_Minmax_Player_Dos(AI_Minmax_Player):
 
 
 class AI_Minmax_Graph_Player(AI_Player):
+    transposition_table: Transposition_Table
+
+    def __init__(self, token: int):
+        self.max_depth = 3
+        self.transposition_table = Board.two_distance_transposition_table_blue if token == 1 \
+            else Board.two_distance_transposition_table_orange
+        super().__init__(token)
 
     def start_dijkstra(self, player: int) -> int:
         source_nodes: list[HexNode]
@@ -503,7 +512,7 @@ class AI_Minmax_Graph_Player(AI_Player):
             current_neighbourhood_nodes_values = list()
             for neighbour in current_neighbourhood_nodes:
                 current_neighbourhood_nodes_values.append(neighbour.node_value)
-                if neighbour.td_value == None:
+                if neighbour.td_value is None:
                     #print(f'{neighbour.node_value} was None')
                     neighbour.td_neighbour_values_list.append(min(current_node.td_neighbour_values_list) + 1)
                     if len(neighbour.td_neighbour_values_list) > 1:
@@ -511,7 +520,7 @@ class AI_Minmax_Graph_Player(AI_Player):
                         queue.append(neighbour)
             #print(f'Neighbours were {current_neighbourhood_nodes_values}')
         result = self.__get_final_two_distance_result(end_node, player_token)
-        if result != None:
+        if result is not None:
             #print(f'Evaluation for player {player_token} is {result}')
             Board.graph.reset_td_values()
             return result
@@ -560,64 +569,88 @@ class AI_Minmax_Graph_Player(AI_Player):
     def get_moves(self):  # get_unoccupied_tiles
         return Board.get_available_nodes()
 
+    def get_hash_next_move_depth(self, position: tuple[int, int], old_depth: int, old_hash_code: int, player_token: int):
+        # Get the table with the random values for the player that makes the next move
+        zobrist_table = self.transposition_table.zobrist_table_blue if player_token == PLAYER_1_TOKEN \
+            else self.transposition_table.zobrist_table_orange
+        # Remove the depth from the previous hash_code and add the new one and add the new player
+        new_hash_code = old_hash_code
+        new_hash_code ^= (old_depth << 62)
+        new_hash_code ^= ((old_depth + 1) << 62)
+        # Add the new move to the hash code
+        row, column = position
+        new_hash_code ^= zobrist_table[row][column]
+        return new_hash_code
+
+
+
     def alpha_beta_pruned_minimax(self, depth: int, isMaximizingPlayer: bool, alpha: int, beta: int,
-                                  player_token: int, max_depth: int = 3):
+                                  player_token: int, hash_code: int, max_depth: int = 3):
+
         pygame.event.clear()
+        # Check if there is an evaluation for this state and depth in the transposition table
+        stored_evaluation = self.transposition_table.load(hash_code)
+        if stored_evaluation is not None:
+            return stored_evaluation
+
+        # Sort in a way to evaluate the middle positions first?
         successors = sorted(self.get_moves(), key=lambda x: abs(x.position[0] - (Board.board_size - 1)/2) + abs(x.position[1] - (Board.board_size - 1)/2))
 
         new_player_token = 1 if player_token == 2 else 2
 
+        # If maximum depth is reached or the board is full, end the recursion
         if depth == max_depth or len(successors) == 0:
             evaluation = self.evaluate_score_two_distance(self.token, depth)
             if evaluation <= 1:
+                self.transposition_table.store(hash_code, evaluation)
                 return evaluation
-            return evaluation + Board.get_bridge_reward(self.token) - Board.get_bridge_reward(1 if self.token == 2 else 2)
+            evaluation_with_bonuses = evaluation + Board.get_bridge_reward(self.token) - Board.get_bridge_reward(1 if self.token == 2 else 2)
+            self.transposition_table.store(hash_code, evaluation_with_bonuses)
+            return evaluation_with_bonuses
+
 
         if depth == 1:
-            result = self.evaluate_score_two_distance(self.token, depth)
+            #result = self.evaluate_score_two_distance(self.token, depth)
             custom_player = AI_Minmax_Player(self.token)
-            result_2 = custom_player.evaluate_score(self.token, depth)
+            #result_2 = custom_player.evaluate_score(self.token, depth)
             # print(result == result_2, result, result_2, custom_player.get_dijkstra_score(self.token))
             # print(result)
             if custom_player.get_dijkstra_score(self.token) == 0:  # it's a winning move
                 # print("do u even get here?")
+                self.transposition_table.store(hash_code, 3000000)
                 return 3000000
 
         if isMaximizingPlayer:
             best_value = float("-inf")
             for successor in successors:
-                #new_board: Board
-                #new_board = board.__copy__()
-                #new_board.make_move(successor.position, player_token)
                 Board.make_move(successor.position, player_token)
-                value = self.alpha_beta_pruned_minimax(depth=depth + 1, isMaximizingPlayer=False, alpha=alpha,
-                                                       beta=beta, player_token=new_player_token)
+                # Calculate the hash for the next state and depth
+                new_hash_code = self.get_hash_next_move_depth(successor.position, depth, hash_code, player_token)
+                value = self.alpha_beta_pruned_minimax(depth=depth + 1, isMaximizingPlayer=False, alpha=alpha, beta=beta,
+                                                       player_token=new_player_token, hash_code=new_hash_code)
                 Board.remove_move(successor.position)
                 best_value = max(best_value, value)
                 alpha = max(alpha, best_value)
                 if beta <= alpha:
                     break
+            self.transposition_table.store(hash_code, best_value)
             return best_value
 
         else:
             best_value = float("inf")
             for successor in successors:
-                #new_board: Board
-                #new_board = board.__copy__()
-                #new_board.make_move(successor.position, player_token)
                 Board.make_move(successor.position, player_token)
-                value = self.alpha_beta_pruned_minimax(depth=depth + 1, isMaximizingPlayer=True, alpha=alpha,
-                                                       beta=beta, player_token=new_player_token)
+                # Calculate the hash for the next state and depth
+                new_hash_code = self.get_hash_next_move_depth(successor.position, depth, hash_code, player_token)
+                value = self.alpha_beta_pruned_minimax(depth=depth + 1, isMaximizingPlayer=True, alpha=alpha, beta=beta,
+                                                       player_token=new_player_token, hash_code=new_hash_code)
                 Board.remove_move(successor.position)
                 best_value = min(best_value, value)
                 beta = min(beta, best_value)
                 if beta <= alpha:
                     break
+            self.transposition_table.store(hash_code, best_value)
             return best_value
-
-    def __init__(self, token: int):
-        self.max_depth = 3
-        super().__init__(token)
 
     def get_opponent_token(self):
         return 1 if self.token == 2 else 2
@@ -628,25 +661,24 @@ class AI_Minmax_Graph_Player(AI_Player):
         return minimax_results.index(maximum)
 
     def get_move(self) -> tuple[int, int]:
-        unoccupied_tiles = Board.get_unoccupied_tiles()
         minmax_results: list[float] = list()
-
         unoccupied_tiles = sorted(Board.get_unoccupied_tiles(), key=lambda x: abs(x[0] - (Board.board_size - 1)/2) + abs(x[1] - (Board.board_size - 1)/2))
+        initial_hash = get_hash_for_state(Board.board, 0, self.transposition_table.zobrist_table_blue,
+                                         self.transposition_table.zobrist_table_orange, Board.board_size)
 
         for tile in unoccupied_tiles:
             Board.make_move(tile, self.token)
+            new_hash_code = self.get_hash_next_move_depth(tile, 1, initial_hash, self.token)
             value = self.alpha_beta_pruned_minimax(depth=1, isMaximizingPlayer=False, alpha=float("-inf"),
-                                                   beta=float("inf"),
-                                                   player_token=self.get_opponent_token(), max_depth=self.max_depth)
+                                                   beta=float("inf"), player_token=self.get_opponent_token(),
+                                                   max_depth=self.max_depth, hash_code=new_hash_code)
             minmax_results.append(value)
             Board.remove_move(tile)
         index: int = self.find_max_value_move(minmax_results)
-        best_tiles = list()
         best_value = minmax_results[index]
+
+        best_tiles = list()
         for i in range(len(minmax_results)):
             if minmax_results[i] == best_value:
                 best_tiles.append(unoccupied_tiles[i])
-        # print(minmax_results)
-        # print(unoccupied_tiles)
-        # print(best_tiles)
         return best_tiles[random.randint(0, len(best_tiles) - 1)]
