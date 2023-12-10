@@ -9,4 +9,4 @@ Watch our video for a short explanation about the game Hex! Fast forward ahead i
 https://github.com/peaceGiant/AI_Hex/assets/60519243/95cc4d88-4d7a-46ef-a7a0-ef16090b0f55
 
 # How can I play againts the AI? (WIP)
-Dare to take on our beast AI player! 😈 ~~Install this executable~~. 
+Dare to take on our beast AI player! 😈 (Executable in progress...)
