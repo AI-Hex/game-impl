@@ -1,4 +1,4 @@
-import pygame, sys, random, copy, numpy, time
+import pygame, random
 from board import *
 from graph import *
 
@@ -7,8 +7,6 @@ class Player(object):
     """
     Base player class
     """
-
-    token: int
 
     def __init__(self, token: int):
         self.token = token
@@ -89,7 +87,7 @@ class AI_Minmax_Player(AI_Player):
         return best_move
 
     def alpha_beta_pruned_minmax(self, player_token: int, is_maximizing_player: bool, current_depth: int,
-                                   alpha: float = float('-inf'), beta: float = float('inf')) -> tuple[float, tuple[int, int]]:
+                                   alpha: float = float('-inf'), beta: float = float('inf')) -> tuple[float, tuple[int, int] | tuple[None, None]]:
         """
         Find next best state using minmax algorithm with alpha beta pruning
 
@@ -246,8 +244,8 @@ class AI_Minmax_Player(AI_Player):
         """
         Get the node position with the smallest distance in 'distances' 
         """
-        resulting_i: int = None
-        resulting_j: int = None
+        resulting_i: int | None = None
+        resulting_j: int | None = None
         min_distance: float = float('inf')
         if len(queue) == 1:
             return queue[0]
@@ -271,7 +269,7 @@ class AI_Minmax_Player_Dos(AI_Minmax_Player):
         super().__init__(token)
 
     def alpha_beta_pruned_minmax(self, player_token: int, is_maximizing_player: bool, current_depth: int,
-                                   alpha: float = float('-inf'), beta: float = float('inf')) -> tuple[float, tuple[int, int]]:
+                                   alpha: float = float('-inf'), beta: float = float('inf')) -> tuple[float, tuple[int, int] | tuple[None, None]]:
         """
         Find next best state using minmax algorithm with alpha beta pruning
 
@@ -363,7 +361,7 @@ class AI_Minmax_Player_Dos(AI_Minmax_Player):
 
 class AI_Minmax_Graph_Player(AI_Player):
 
-    def start_dijkstra(self, player: int) -> int:
+    def start_dijkstra(self, player: int) -> int | float:
         source_nodes: list[HexNode]
         if player == 1:  # player goal is to connect left and right side of the board
             source_node = Board.hex_nodes_by_position['L']
@@ -390,8 +388,8 @@ class AI_Minmax_Graph_Player(AI_Player):
                 found_node = node
         return found_node
 
-    def dijkstra(self, source: HexNode, player_token: int) -> list[int]:
-        distances: list[int]
+    def dijkstra(self, source: HexNode, player_token: int) -> int | float:
+        distances: list[int | float]
         queue: list[HexNode]
         distances = list()
         queue = list()
@@ -422,9 +420,9 @@ class AI_Minmax_Graph_Player(AI_Player):
             resulting_distances = [distances[i] for i in range(num_nodes - board_size, num_nodes)]
         return resulting_distances
         """
-        if player_token == PLAYER_1_TOKEN: #result is distance to RIGHT node
+        if player_token == PLAYER_1_TOKEN:  # result is distance to RIGHT node
             return distances[num_nodes + RIGHT]
-        else: #result is distance to DOWN node
+        else:  # result is distance to DOWN node
             return distances[num_nodes + DOWN]
 
     def find_chain(self, player, current_node) -> set[HexNode]:
@@ -560,7 +558,7 @@ class AI_Minmax_Graph_Player(AI_Player):
     def get_moves(self):  # get_unoccupied_tiles
         return Board.get_available_nodes()
 
-    def alpha_beta_pruned_minimax(self, depth: int, isMaximizingPlayer: bool, alpha: int, beta: int,
+    def alpha_beta_pruned_minimax(self, depth: int, isMaximizingPlayer: bool, alpha: float, beta: float,
                                   player_token: int, max_depth: int = 3):
         pygame.event.clear()
         successors = sorted(self.get_moves(), key=lambda x: abs(x.position[0] - (Board.board_size - 1)/2) + abs(x.position[1] - (Board.board_size - 1)/2))

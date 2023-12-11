@@ -1,6 +1,4 @@
-import pygame, sys
-from pygame.locals import *
-from board import *
+import sys
 from player import *
 from graphics import *
 
@@ -15,72 +13,36 @@ class Game(object):
     player_1: Player
     player_2: Player
     players: list[Player]
+    player_turn: int
 
     def __init__(self, board_size: int, player_1: Player, player_2: Player):
         """
         Initialize necessary objects for a hex game
         """
         Game.game_board = Board(board_size)
-        self.game_graphics = Graphics(board_size)
-        self.player_1 = player_1
-        self.player_2 = player_2
-        self.players = [player_1, player_2]
-        self.player_turn = 0
+        Game.game_graphics = Graphics(board_size)
+        Game.player_1 = player_1
+        Game.player_2 = player_2
+        Game.players = [player_1, player_2]
+        Game.player_turn = 0
 
     def start(self):
         """
         Start a round of Hex
         """
-        self.game_graphics.draw_grid()
-        # Game loop
-        while True:
+        Game.game_graphics.draw_grid()
+        while True:  # Game loop
 
-            if self.players[self.player_turn].is_ai() is True:
+            if Game.players[Game.player_turn].is_ai() is True:
                 self.__handle_ai_move()
             else:
                 self.__handle_human_move()
 
             # Advance turn to the next player
-            self.player_turn = 1 - self.player_turn
-    
-    def start_simulation(self, num_iters: int):
-        # Game loop
-        num_wins_player_1 = 0
-        num_wins_player_2 = 0
-        sum_tiles_player_1 = 0
-        sum_tiles_player_2 = 0
-        avg_time_players = list([0, 0])
-        curr_iter = 1
-        while curr_iter <= num_iters:
-            self.game_graphics.draw_board(Board.board)
-            begin_time = time.time()
-            tile_pos = self.players[self.player_turn].get_move()
-            end_time = time.time()
-            print('player', self.player_turn + 1, tile_pos)
-            avg_time_players[self.player_turn] += end_time - begin_time
-            self.game_board.make_move(tile_pos, self.players[self.player_turn].token)
-            if Board.get_win_token() == 1:
-                num_wins_player_1 += 1
-                sum_tiles_player_1 += len(Board.get_occupied_tiles(1))
-                sum_tiles_player_2 += len(Board.get_occupied_tiles(2))
-                self.__reset_game()
-                curr_iter += 1
-                self.player_turn = 0
-                print('p1 wins')
-                continue
-            elif Board.get_win_token() == 2:
-                num_wins_player_2 += 1
-                sum_tiles_player_1 += len(Board.get_occupied_tiles(1))
-                sum_tiles_player_2 += len(Board.get_occupied_tiles(2))
-                self.__reset_game()
-                curr_iter += 1
-                self.player_turn = 0
-                print('p2 wins')
-                continue
-            self.player_turn = 1 - self.player_turn
-        return ("player 1 wins: ", num_wins_player_1, "player 2 wins: ", num_wins_player_2, 'time per game', [time / num_iters for time in avg_time_players], 'avg num of tiles per game: p1 v p2 = ', sum_tiles_player_1 / num_iters, sum_tiles_player_2 / num_iters)
-        
-    def __check_for_quit(self, event: pygame.event.Event) -> bool:
+            Game.player_turn = 1 - Game.player_turn
+
+    @staticmethod
+    def __check_for_quit(event: pygame.event.Event) -> bool:
         """
         Check if user wants to quit
         """
@@ -90,177 +52,190 @@ class Game(object):
             if event.key == K_ESCAPE: 
                 return True
         return False
-    
-    def __check_for_move(self, event: pygame.event.Event) -> bool:
+
+    @staticmethod
+    def __check_for_move(event: pygame.event.Event) -> bool:
         """
         Check if the player made a valid move (clicked a tile)
         """
         if event.type == MOUSEBUTTONUP:
             click_x, click_y = event.pos
-            for i in range(self.game_board.board_size):
-                for j in range(self.game_board.board_size):
-                    if self.game_graphics.click_board[i][j].collidepoint(click_x, click_y):
-                        if self.game_board.is_tile_occupied((i, j)) == False:
+            for i in range(Game.game_board.board_size):
+                for j in range(Game.game_board.board_size):
+                    if Game.game_graphics.click_board[i][j].collidepoint(click_x, click_y):
+                        if not Game.game_board.is_tile_occupied((i, j)):
                             return True
                         return False
         return False
 
-    def __check_for_win(self, player_turn: int):
+    @staticmethod
+    def __check_for_win(player_turn: int):
         """
         Check and handle player win
         """
-        if self.game_board.check_victory() is True:
-            self.game_graphics.animate_win_path(self.game_board.get_win_path(), player_turn + 1)
-            #print(move_list)
+        if Game.game_board.check_victory() is True:
+            Game.game_graphics.animate_win_path(Game.game_board.get_win_path(), player_turn + 1)
             while True:
                 for event in pygame.event.get():
-                    if self.__check_for_quit(event) is True:
-                        self.__terminate()
-                    if self.__check_for_reset(event) is True:
-                        self.__reset_game()
+                    if Game.__check_for_quit(event) is True:
+                        Game.__terminate()
+                    if Game.__check_for_reset(event) is True:
+                        Game.__reset_game()
                         return
-                    if self.__check_for_pause(event) is True:
-                        self.__pause_game()
-                if self.game_board.is_empty() is True:
+                    if Game.__check_for_pause(event) is True:
+                        Game.__pause_game()
+                if Game.game_board.is_empty() is True:
                     return
-        self.game_graphics.draw_turn(1 - player_turn)  # If player hasn't won, display the turn of the next player
+        Game.game_graphics.draw_turn(1 - player_turn)  # If player hasn't won, display the turn of the next player
 
-    def __check_for_reset(self, event: pygame.event.Event) -> bool:
+    @staticmethod
+    def __check_for_reset(event: pygame.event.Event) -> bool:
         """
         Check requirements for resetting board 
         """
-        self.game_graphics.animate_reset_text()
+        Game.game_graphics.animate_reset_text()
         if event.type == MOUSEBUTTONUP:
             click_x, click_y = event.pos
-            if self.game_graphics.reset_text_box.collidepoint(click_x, click_y) is True:
+            if Game.game_graphics.reset_text_box.collidepoint(click_x, click_y) is True:
                 return True
         if event.type == KEYUP:
             if event.key == K_SPACE:
                 return True
         return False
-    
-    def __translate_pos_to_move(self, click_pos: tuple[float, float]) -> tuple[int, int] | None:
+
+    @staticmethod
+    def __translate_pos_to_move(click_pos: tuple[float, float]) -> tuple[int, int] | None:
         """
         Translate coordinates of mouse click to tile position if possible
         """
         click_x, click_y = click_pos
-        for i in range(self.game_board.board_size):
-            for j in range(self.game_board.board_size):
-                if self.game_graphics.click_board[i][j].collidepoint(click_x, click_y):
+        for i in range(Game.game_board.board_size):
+            for j in range(Game.game_board.board_size):
+                if Game.game_graphics.click_board[i][j].collidepoint(click_x, click_y):
                     return i, j
         return None
 
-    def __reset_game(self):
+    @staticmethod
+    def __reset_game():
         """
         Handle reset of game board
         """
-        self.game_graphics.draw_grid()
-        self.game_board.clear_board()
-        self.player_turn = 1  # end the turn on the second player
+        Game.game_graphics.draw_grid()
+        Game.game_board.clear_board()
+        Game.player_turn = 1  # end the turn on the second player for the next player to be first player
 
-    def __handle_ai_move(self):
+    @staticmethod
+    def __handle_ai_move():
         """
         Handle AI's turn to make a move on the board
         """
-        tile_pos = self.players[self.player_turn].get_move()
-        assert tile_pos != None and self.game_board.is_tile_occupied(tile_pos) == False
-        self.game_board.make_move(tile_pos, self.players[self.player_turn].token)
-        self.game_graphics.draw_move(tile_pos, self.players[self.player_turn].token)
-        self.__check_for_win(self.player_turn)
+        tile_pos = Game.players[Game.player_turn].get_move()
+        Game.game_board.make_move(tile_pos, Game.players[Game.player_turn].token)
+        Game.game_graphics.draw_move(tile_pos, Game.players[Game.player_turn].token)
+        Game.__check_for_win(Game.player_turn)
 
-    def __handle_move(self, tile_pos: tuple[int, int]):
+    @staticmethod
+    def __handle_move(tile_pos: tuple[int, int]):
         """
         Handle player's made move on the board
         """
-        self.game_board.make_move(tile_pos, self.players[self.player_turn].token)
-        self.game_graphics.draw_move(tile_pos, self.players[self.player_turn].token)
-        self.__check_for_win(self.player_turn)
+        Game.game_board.make_move(tile_pos, Game.players[Game.player_turn].token)
+        Game.game_graphics.draw_move(tile_pos, Game.players[Game.player_turn].token)
+        Game.__check_for_win(Game.player_turn)
 
-    def __check_for_pause(self, event: pygame.event.Event) -> bool:
+    @staticmethod
+    def __check_for_pause(event: pygame.event.Event) -> bool:
         """
-        Check if settings menu should be openned
+        Check if settings menu should be opened
         """
-        self.game_graphics.animate_settings_text()
+        Game.game_graphics.animate_settings_text()
         if event.type == MOUSEBUTTONUP:
             click_x, click_y = event.pos
-            if self.game_graphics.settings_text_box.collidepoint(click_x, click_y):
+            if Game.game_graphics.settings_text_box.collidepoint(click_x, click_y):
                 return True
         if event.type == KEYUP:
             if event.key == K_TAB:
                 return True
         return False
-    
-    def __pause_game(self):
+
+    @staticmethod
+    def __pause_game():
         """
         Set the game in a pause state and return safely from it 
         """
-        self.__handle_paused_game()
-        self.game_graphics.draw_board(self.game_board.board)
+        Game.__handle_paused_game()
+        Game.game_graphics.draw_board(Game.game_board.board)
 
-    def __handle_paused_game(self):
+    @staticmethod
+    def __handle_paused_game():
         """
         Open settings menu and handle pause state
         """
-        player_1_human_flag = self.player_1.is_human()
-        player_2_human_flag = self.player_2.is_human()
-        self.game_graphics.draw_paused_game(player_1_human_flag, player_2_human_flag)
+        player_1_human_flag = Game.player_1.is_human()
+        player_2_human_flag = Game.player_2.is_human()
+        Game.game_graphics.draw_paused_game(player_1_human_flag, player_2_human_flag)
 
         while True: 
             for event in pygame.event.get():
-                if self.__check_for_quit(event) is True:
-                    self.__terminate()
+                if Game.__check_for_quit(event) is True:
+                    Game.__terminate()
                 if event.type == MOUSEBUTTONUP:
                     click_x, click_y = event.pos
-                    if self.game_graphics.player_1_human_box.collidepoint(click_x, click_y) is True:
+                    if Game.game_graphics.player_1_human_box.collidepoint(click_x, click_y) is True:
                         player_1_human_flag = True
-                    if self.game_graphics.player_1_ai_box.collidepoint(click_x, click_y) is True:
+                    if Game.game_graphics.player_1_ai_box.collidepoint(click_x, click_y) is True:
                         player_1_human_flag = False
-                    if self.game_graphics.player_2_human_box.collidepoint(click_x, click_y) is True:
+                    if Game.game_graphics.player_2_human_box.collidepoint(click_x, click_y) is True:
                         player_2_human_flag = True
-                    if self.game_graphics.player_2_ai_box.collidepoint(click_x, click_y) is True:
+                    if Game.game_graphics.player_2_ai_box.collidepoint(click_x, click_y) is True:
                         player_2_human_flag = False
-                    if self.game_graphics.go_back_box.collidepoint(click_x, click_y) is True:
+                    if Game.game_graphics.go_back_box.collidepoint(click_x, click_y) is True:
                         return
-                    if self.game_graphics.save_changes_box.collidepoint(click_x, click_y) is True:
-                        self.__change_players(player_1_human_flag, player_2_human_flag)
-                        self.__reset_game()
+                    if Game.game_graphics.save_changes_box.collidepoint(click_x, click_y) is True:
+                        Game.__change_players(player_1_human_flag, player_2_human_flag)
+                        Game.__reset_game()
                         return
-                    self.game_graphics.draw_paused_game(player_1_human_flag, player_2_human_flag)
+                    Game.game_graphics.draw_paused_game(player_1_human_flag, player_2_human_flag)
 
-    def __change_players(self, player_1_human_flag: bool, player_2_human_flag: bool):
+    @staticmethod
+    def __change_players(player_1_human_flag: bool, player_2_human_flag: bool):
+        """
+        Instantiate new types for players chosen from selection screen
+        """
         if player_1_human_flag is True:
-            self.player_1 = Human_Player(1)
+            Game.player_1 = Human_Player(1)
         else:
-            self.player_1 = AI_Random_Player(1)
+            Game.player_1 = AI_Minmax_Graph_Player(1)
         if player_2_human_flag is True:
-            self.player_2 = Human_Player(2)
+            Game.player_2 = Human_Player(2)
         else:
-            self.player_2 = AI_Random_Player(2)            
-        self.players[0] = self.player_1
-        self.players[1] = self.player_2
+            Game.player_2 = AI_Minmax_Graph_Player(2)
+        Game.players[0] = Game.player_1
+        Game.players[1] = Game.player_2
 
-    def __terminate(self):
+    @staticmethod
+    def __terminate():
         """
         Exit the game
         """
         pygame.quit()
         sys.exit()
 
-    def __handle_human_move(self):
+    @staticmethod
+    def __handle_human_move():
         """
         Handle initial player interactions with the active game board
         """
-        # Player loop
-        while True:
+        while True:  # Player loop
             for event in pygame.event.get():
-                if self.__check_for_quit(event) is True:
-                    self.__terminate()
-                if self.__check_for_reset(event) is True:
-                    self.__reset_game()
+                if Game.__check_for_quit(event) is True:
+                    Game.__terminate()
+                if Game.__check_for_reset(event) is True:
+                    Game.__reset_game()
                     return
-                if self.__check_for_move(event) is True:
-                    self.__handle_move(self.__translate_pos_to_move(event.pos))
+                if Game.__check_for_move(event) is True:
+                    Game.__handle_move(Game.__translate_pos_to_move(event.pos))
                     return
-                if self.__check_for_pause(event) is True:
-                    self.__pause_game()
+                if Game.__check_for_pause(event) is True:
+                    Game.__pause_game()
                     return
